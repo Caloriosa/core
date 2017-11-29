@@ -11,12 +11,12 @@ type Device struct {
 type Sensor struct {
 	Alias       string
 	Title       string
-	Type        int
+	Type        string
 	Description string
 }
 
 const (
-	SensorTemperature = 0
-	SensorHumidity    = 1
-	SensorWindSpeed   = 2
+	SensorTemperature = "Temperature"
+	SensorHumidity    = "Humidity"
+	SensorWindSpeed   = "WindSpeed"
 )
