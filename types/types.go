@@ -10,7 +10,7 @@ type Device struct {
 	Location       string
 	FeaturedSensor *Sensor
 	Tags           []string
-	CreatedAt      Time
+	CreatedAt      time.Time
 }
 
 type Sensor struct {
@@ -18,7 +18,7 @@ type Sensor struct {
 	Title       string
 	Type        string
 	Description string
-	CreatedAt   Time
+	CreatedAt   time.Time
 }
 
 const (
@@ -29,14 +29,14 @@ const (
 
 type Measurement struct {
 	Sensor     *Sensor
-	MeasuredAt Time
+	MeasuredAt time.Time
 }
 
 type Token struct {
 	Token     string
 	Type      string
-	CreatedAt Time
-	ExpireAt  Time
+	CreatedAt time.Time
+	ExpireAt  time.Time
 	User      *User
 	Device    *Device
 }
@@ -51,5 +51,6 @@ type User struct {
 	Password  string
 	Email     string
 	Name      string
-	CreatedAt Time
+	CreatedAt time.Time
+	Activated bool
 }

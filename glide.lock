@@ -1,0 +1,10 @@
+hash: 24ea7574279358ff92d241398f91c5aad8667fa94deffd59cafe85541d9bc40a
+updated: 2017-12-02T16:54:21.9500212+01:00
+imports:
+- name: github.com/emicklei/go-restful
+  version: 5741799b275a3c4a5a9623a993576d7545cf7b5c
+- name: github.com/go-bongo/bongo
+  version: 58e3a1fbb5ea15dde8675b60becb2a9950e70164
+- name: github.com/golang/glog
+  version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+testImports: []
