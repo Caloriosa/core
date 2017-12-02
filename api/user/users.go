@@ -1,4 +1,4 @@
-package api
+package user
 
 import (
 	"core/types"
@@ -17,12 +17,17 @@ func Register(container *restful.Container) {
 
 func (u *UserResource) Register(container *restful.Container) {
 	ws := new(restful.WebService)
-	ws.Path("/user")
+	ws.Path("/users")
 	ws.Route(ws.GET("").To(u.listUsers))
+	ws.Route(ws.POST("").To(u.createUser))
 
 	container.Add(ws)
 }
 
 func (u *UserResource) listUsers(request *restful.Request, response *restful.Response) {
 	response.WriteErrorString(http.StatusNotFound, "User could not be found.")
+}
+
+func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
+
 }

@@ -7,7 +7,7 @@ import (
 	"github.com/golang/glog"
 	"io"
 	"net/http"
-	"core/api"
+	userapi "core/api/user"
 )
 
 var VERSION = "Unknown-build"
@@ -22,7 +22,7 @@ func main() {
 	restful.DefaultContainer.EnableContentEncoding(true)
 	restful.DefaultContainer.Router(restful.CurlyRouter{})
 
-	api.Register(restful.DefaultContainer)
+	userapi.Register(restful.DefaultContainer)
 
 	glog.Fatal(http.ListenAndServe(":8080", nil))
 }
