@@ -5,7 +5,7 @@ import (
 )
 
 type Device struct {
-	ObjectID	   string
+	ObjectID       string
 	Title          string
 	Description    string
 	Location       string
@@ -15,8 +15,8 @@ type Device struct {
 }
 
 type Sensor struct {
-	ObjectID	string
-	Device		*Device
+	ObjectID    string
+	Device      *Device
 	Alias       string
 	Title       string
 	Type        string
@@ -31,7 +31,7 @@ const (
 )
 
 type Measurement struct {
-	ObjectID	string
+	ObjectID   string
 	Sensor     *Sensor
 	MeasuredAt time.Time
 }

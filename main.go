@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 
+	userapi "core/api/user"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"io"
 	"net/http"
-	userapi "core/api/user"
 )
 
 var VERSION = "Unknown-build"
