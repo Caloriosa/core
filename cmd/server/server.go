@@ -28,5 +28,7 @@ func main() {
 	userapi.Register(restful.DefaultContainer)
 	deviceapi.Register(restful.DefaultContainer)
 
-	glog.Fatal(http.ListenAndServe(":8080", nil))
+	err := http.ListenAndServe(":8080", nil)
+
+	glog.Fatal(err)
 }

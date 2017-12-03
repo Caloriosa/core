@@ -7,7 +7,9 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"time"
+	"gopkg.in/mgo.v2/bson"
+	"core/pkg/sanitization"
+	"core/pkg/validation"
 )
 
 const COLLECTION_USERS = "users"
@@ -20,13 +22,16 @@ func Register(container *restful.Container) {
 	u := UserResource{map[string]types.User{}}
 	u.Register(container)
 
+	collation := mgo.Collation{Locale: "cs", Strength: 2}
+
 	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
-		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true}); err != nil {
+
+		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 
 	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
-		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true}); err != nil {
+		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 }
@@ -48,7 +53,6 @@ func (u *UserResource) Register(container *restful.Container) {
 	// user id
 	ws.Route(ws.GET("{user-id}").To(u.getUser))
 	ws.Route(ws.PATCH("{user-id}").To(u.patchUser))
-	ws.Route(ws.PUT("{user-id}").To(u.putUser))
 
 	// tokens
 	ws.Route(ws.GET("users/{user-id}/tokens").To(u.getTokens))
@@ -64,6 +68,7 @@ func (u *UserResource) Register(container *restful.Container) {
 	ws.Route(ws.POST("resetpass").To(u.resetPassword))
 
 	container.Add(ws)
+
 }
 
 func (u *UserResource) listUsers(request *restful.Request, response *restful.Response) {
@@ -79,7 +84,7 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 	result.Query.All(&users)
 
 	for index := range users {
-		users[index].Password = ""
+		sanitization.UserSanitization(&users[index])
 	}
 
 	httptypes.SendOK(users, response)
@@ -95,7 +100,12 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 		return
 	}
 
-	newUser.CreatedAt = time.Now().UTC()
+	if err = validation.ValidateNewUser(&newUser); err != nil {
+		httptypes.SendInvalidData(nil, response)
+		glog.Infof("Error validating a new user: ", err)
+		return
+	}
+
 	newUser.Activated = false
 	newUser.Role = types.RoleUser
 
@@ -104,8 +114,14 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 		glog.Warning("Error saving new user to db: ", err)
 		httptypes.SendDuplicated(httptypes.EMPTY_CONTENT, response)
 	} else {
+		theuser := types.User{}
+		if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).FindOne(newUser, &theuser); err != nil {
+			glog.Infof("Error finding the original user I just created. ", err)
+			httptypes.SendGeneralError(nil, response)
+		}
 		glog.Infof("Created new user: ", newUser)
-		httptypes.SendCreated(httptypes.EMPTY_CONTENT, response)
+		sanitization.UserSanitization(&theuser)
+		httptypes.SendCreated(theuser, response)
 	}
 }
 
@@ -126,14 +142,20 @@ func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Re
 }
 
 func (u *UserResource) getUser(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("user-id")
+	user := types.User{}
+	err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).FindById(bson.ObjectIdHex(id), &user)
+	if err != nil {
+		httptypes.SendNotFound(nil, response)
+		return
+	}
 
+	sanitization.UserSanitization(&user)
+
+	httptypes.SendOK(user, response)
 }
 
 func (u *UserResource) patchUser(request *restful.Request, response *restful.Response) {
-
-}
-
-func (u *UserResource) putUser(request *restful.Request, response *restful.Response) {
 
 }
 

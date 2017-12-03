@@ -33,37 +33,35 @@ const (
 
 type Measurement struct {
 	bongo.DocumentBase `bson:",inline"`
-	Sensor             *Sensor
-	MeasuredAt         time.Time
+	Sensor             *Sensor `json:"sensor"`
+	MeasuredAt         time.Time `json:"measuredat"`
 }
 
 type Token struct {
 	bongo.DocumentBase `bson:",inline"`
-	Token              string
-	Type               string
-	CreatedAt          time.Time
-	ExpireAt           time.Time
-	User               *User
-	Device             *Device
+	Token              string `json:"token"`
+	Type               string `json:"type"`
+	ExpireAt           time.Time`json:"expireat"`
+	User               *User `json:"user"`
+	Device             *Device `json:"device"`
 }
 
 const (
-	TokenUser   = "User"
-	TokenDevice = "Device"
+	TokenUser   = "user"
+	TokenDevice = "device"
 )
 
 type User struct {
 	bongo.DocumentBase `bson:",inline"`
-	Login              string
-	Password           string
-	Email              string
-	Name               string
-	CreatedAt          time.Time
-	Activated          bool
-	Role               string
+	Login              string `json:"login"`
+	Password           string `json:"password"`
+	Email              string `json:"email"`
+	Name               string `json:"name"`
+	Activated          bool `json:"activated"`
+	Role               string `json:"role"`
 }
 
 const (
-	RoleUser  = "User"
-	RoleAdmin = "Admin"
+	RoleUser  = "member"
+	RoleAdmin = "admin"
 )

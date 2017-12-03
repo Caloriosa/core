@@ -30,11 +30,11 @@ func SendOK(content interface{}, r *restful.Response) error {
 }
 
 func SendCreated(content interface{}, r *restful.Response) error {
-	return Send(http.StatusCreated, "CREATED", "created", content, r)
+	return Send(http.StatusOK, "CREATED", "created", content, r)
 }
 
 func SendDuplicated(content interface{}, r *restful.Response) error {
-	return Send(http.StatusConflict, "DUPLICATED", "bad request", content, r)
+	return Send(http.StatusConflict, "DUPLICATED", "Duplicated content or resource", content, r)
 }
 
 func SendNotFound(content interface{}, r *restful.Response) error {
