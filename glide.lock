@@ -1,10 +1,23 @@
-hash: 24ea7574279358ff92d241398f91c5aad8667fa94deffd59cafe85541d9bc40a
-updated: 2017-12-02T16:54:21.9500212+01:00
+hash: 05c5b15479c05e01fabd9293711e676fce1a27f899782f60e279a971184d70de
+updated: 2017-12-03T11:04:30.6717925+01:00
 imports:
 - name: github.com/emicklei/go-restful
   version: 5741799b275a3c4a5a9623a993576d7545cf7b5c
+  subpackages:
+  - log
 - name: github.com/go-bongo/bongo
   version: 58e3a1fbb5ea15dde8675b60becb2a9950e70164
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/maxwellhealth/go-dotaccess
+  version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
+- name: github.com/oleiade/reflections
+  version: 0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
+  - internal/json
+  - internal/sasl
+  - internal/scram
 testImports: []

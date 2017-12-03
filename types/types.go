@@ -1,27 +1,28 @@
 package types
 
 import (
+	"github.com/go-bongo/bongo"
 	"time"
 )
 
 type Device struct {
-	ObjectID       string
-	Title          string
-	Description    string
-	Location       string
-	FeaturedSensor *Sensor
-	Tags           []string
-	CreatedAt      time.Time
+	bongo.DocumentBase `bson:",inline"`
+	Title              string
+	Description        string
+	Location           string
+	FeaturedSensor     *Sensor
+	Tags               []string
+	CreatedAt          time.Time
 }
 
 type Sensor struct {
-	ObjectID    string
-	Device      *Device
-	Alias       string
-	Title       string
-	Type        string
-	Description string
-	CreatedAt   time.Time
+	bongo.DocumentBase `bson:",inline"`
+	Device             *Device
+	Alias              string
+	Title              string
+	Type               string
+	Description        string
+	CreatedAt          time.Time
 }
 
 const (
@@ -31,19 +32,19 @@ const (
 )
 
 type Measurement struct {
-	ObjectID   string
-	Sensor     *Sensor
-	MeasuredAt time.Time
+	bongo.DocumentBase `bson:",inline"`
+	Sensor             *Sensor
+	MeasuredAt         time.Time
 }
 
 type Token struct {
-	ObjectID  string
-	Token     string
-	Type      string
-	CreatedAt time.Time
-	ExpireAt  time.Time
-	User      *User
-	Device    *Device
+	bongo.DocumentBase `bson:",inline"`
+	Token              string
+	Type               string
+	CreatedAt          time.Time
+	ExpireAt           time.Time
+	User               *User
+	Device             *Device
 }
 
 const (
@@ -52,11 +53,17 @@ const (
 )
 
 type User struct {
-	ObjectID  string
-	Login     string
-	Password  string
-	Email     string
-	Name      string
-	CreatedAt time.Time
-	Activated bool
+	bongo.DocumentBase `bson:",inline"`
+	Login              string
+	Password           string
+	Email              string
+	Name               string
+	CreatedAt          time.Time
+	Activated          bool
+	Role               string
 }
+
+const (
+	RoleUser  = "User"
+	RoleAdmin = "Admin"
+)
