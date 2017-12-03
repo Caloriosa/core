@@ -3,10 +3,10 @@ package user
 import (
 	"core/pkg/db"
 	"core/types"
+	"core/types/httptypes"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"net/http"
 	"time"
 )
 
@@ -20,9 +20,13 @@ func Register(container *restful.Container) {
 	u := UserResource{map[string]types.User{}}
 	u.Register(container)
 
-	err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
-		EnsureIndex(mgo.Index{Key: []string{"login", "email"}, Unique: true})
-	if err != nil {
+	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
+		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true}); err != nil {
+		glog.Fatalf("Error ensuring index: ", err)
+	}
+
+	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
+		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 }
@@ -63,14 +67,30 @@ func (u *UserResource) Register(container *restful.Container) {
 }
 
 func (u *UserResource) listUsers(request *restful.Request, response *restful.Response) {
-	response.WriteErrorString(http.StatusNotFound, "User could not be found.")
+	result := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Find(nil)
+
+	if result.Error != nil {
+		glog.Warning("Got error fetching users: ", result.Error)
+		httptypes.SendGeneralError(httptypes.EMPTY_CONTENT, response)
+		return
+	}
+
+	var users []types.User
+	result.Query.All(&users)
+
+	for index := range users {
+		users[index].Password = ""
+	}
+
+	httptypes.SendOK(users, response)
+	glog.Info("Returned user list: ", users)
 }
 
 func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
 	newUser := types.User{}
 	err := request.ReadEntity(&newUser)
 	if err != nil {
-		types.Send(http.StatusBadRequest, "Error casting a new user", types.EMPTY_CONTENT, response)
+		httptypes.SendInvalidData(httptypes.EMPTY_CONTENT, response)
 		glog.Warning("Error parsing a new user: ", err)
 		return
 	}
@@ -82,10 +102,10 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 	err = db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Save(&newUser)
 	if err != nil {
 		glog.Warning("Error saving new user to db: ", err)
-		types.Send(http.StatusBadRequest, "Error saving a new user", types.EMPTY_CONTENT, response)
+		httptypes.SendDuplicated(httptypes.EMPTY_CONTENT, response)
 	} else {
 		glog.Infof("Created new user: ", newUser)
-		types.SendCreated(types.EMPTY_CONTENT, response)
+		httptypes.SendCreated(httptypes.EMPTY_CONTENT, response)
 	}
 }
 
