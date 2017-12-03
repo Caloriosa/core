@@ -15,5 +15,5 @@ func ValidateNewUser (user *types.User) error {
 	if user.Login == "" {
 		return errors.New("Missing login")
 	}
-	return nil
+	return ValidateEmail(user.Email)
 }
