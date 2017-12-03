@@ -5,15 +5,13 @@ import (
 	"flag"
 
 	deviceapi "core/api/device"
+	"core/pkg/db"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"net/http"
-	"core/pkg/db"
 )
 
 var VERSION = "Unknown-build"
-
-
 
 func main() {
 	flag.Parse()

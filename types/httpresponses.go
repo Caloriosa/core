@@ -6,12 +6,12 @@ import (
 )
 
 type HttpResponseStatus struct {
-	Code int
+	Code    int
 	Message string
 }
 
 type HttpResponsePack struct {
-	Status HttpResponseStatus
+	Status  HttpResponseStatus
 	content interface{}
 }
 
@@ -21,7 +21,7 @@ func Send(code int, message string, content interface{}, r *restful.Response) er
 	h := HttpResponsePack{
 		HttpResponseStatus{code, message},
 		content,
-		}
+	}
 	return r.WriteHeaderAndJson(code, h, restful.MIME_JSON)
 }
 

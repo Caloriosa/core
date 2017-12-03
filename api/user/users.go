@@ -1,12 +1,13 @@
 package user
 
 import (
+	"core/pkg/db"
 	"core/types"
 	"github.com/emicklei/go-restful"
-	"net/http"
 	"github.com/golang/glog"
+	"gopkg.in/mgo.v2"
+	"net/http"
 	"time"
-	"core/pkg/db"
 )
 
 const COLLECTION_USERS = "users"
@@ -18,6 +19,12 @@ type UserResource struct {
 func Register(container *restful.Container) {
 	u := UserResource{map[string]types.User{}}
 	u.Register(container)
+
+	err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
+		EnsureIndex(mgo.Index{Key: []string{"login", "email"}, Unique: true})
+	if err != nil {
+		glog.Fatalf("Error ensuring index: ", err)
+	}
 }
 
 func (u *UserResource) Register(container *restful.Container) {
@@ -65,6 +72,7 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 	if err != nil {
 		types.Send(http.StatusBadRequest, "Error casting a new user", types.EMPTY_CONTENT, response)
 		glog.Warning("Error parsing a new user: ", err)
+		return
 	}
 
 	newUser.CreatedAt = time.Now().UTC()

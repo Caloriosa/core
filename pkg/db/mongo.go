@@ -2,8 +2,8 @@ package db
 
 import (
 	"github.com/go-bongo/bongo"
-	"os"
 	"github.com/golang/glog"
+	"os"
 )
 
 var MONGO_CONNECTION *bongo.Connection = nil
