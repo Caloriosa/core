@@ -81,7 +81,13 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 	}
 
 	var users []types.User
-	result.Query.All(&users)
+	err := result.Query.All(&users)
+	if err != nil {
+		httptypes.SendGeneralError(nil, response)
+		glog.Error("Got an error doing listUser: ", err.Error())
+		db.MONGO_CONNECTION.Session.Refresh()
+		return
+	}
 
 	for index := range users {
 		sanitization.UserSanitization(&users[index])
