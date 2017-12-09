@@ -18,7 +18,13 @@ func main() {
 
 	glog.Infof("Initializing Caloriosa Core V %s", VERSION)
 
-	db.ConnectMongo()
+	var err error
+
+	err = db.NewMongo()
+	if err != nil {
+		glog.Fatalf("Exitting.")
+		return
+	}
 
 	restful.DefaultRequestContentType(restful.MIME_JSON)
 	restful.DefaultResponseContentType(restful.MIME_JSON)
@@ -29,7 +35,7 @@ func main() {
 	deviceapi.Register(restful.DefaultContainer)
 
 
-	err := http.ListenAndServe(":8080", nil)
+	err = http.ListenAndServe(":8080", nil)
 
 	glog.Fatal(err)
 }

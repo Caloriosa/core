@@ -17,3 +17,17 @@ func ValidateNewUser (user *types.User) error {
 	}
 	return ValidateEmail(user.Email)
 }
+
+func MergeChangedUser (user *types.User, with *types.User) {
+	if with.Login != "" {
+		user.Login = with.Login
+	}
+
+	if with.Password != "" {
+		user.Password = with.Password
+	}
+
+	if with.Email != "" {
+		user.Email = with.Email
+	}
+}

@@ -7,12 +7,14 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
 	"core/pkg/sanitization"
 	"core/pkg/validation"
+	"encoding/json"
+	"core/pkg/tools"
 )
 
 const COLLECTION_USERS = "users"
+const DEFAULT_LIMIT = 50
 
 type UserResource struct {
 	users map[string]types.User
@@ -24,13 +26,13 @@ func Register(container *restful.Container) {
 
 	collation := mgo.Collation{Locale: "cs", Strength: 2}
 
-	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
+	if err := db.MONGO.Connection.Collection(COLLECTION_USERS).Collection().
 
 		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 
-	if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Collection().
+	if err := db.MONGO.Connection.Collection(COLLECTION_USERS).Collection().
 		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
@@ -72,22 +74,17 @@ func (u *UserResource) Register(container *restful.Container) {
 }
 
 func (u *UserResource) listUsers(request *restful.Request, response *restful.Response) {
-	result := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Find(nil)
-
-	if result.Error != nil {
-		glog.Warning("Got error fetching users: ", result.Error)
-		httptypes.SendGeneralError(httptypes.EMPTY_CONTENT, response)
-		return
-	}
-
 	var users []types.User
-	err := result.Query.All(&users)
+
+	var page, limit int
+	var err error
+
+	page, limit, err = tools.GetPagination(request.Request.URL.Query())
 	if err != nil {
 		httptypes.SendGeneralError(nil, response)
-		glog.Error("Got an error doing listUser: ", err.Error())
-		db.MONGO_CONNECTION.Session.Refresh()
-		return
 	}
+
+	db.MONGO.GetAll(COLLECTION_USERS, &users, page, limit)
 
 	for index := range users {
 		sanitization.UserSanitization(&users[index])
@@ -115,19 +112,14 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 	newUser.Activated = false
 	newUser.Role = types.RoleUser
 
-	err = db.MONGO_CONNECTION.Collection(COLLECTION_USERS).Save(&newUser)
+	err = db.MONGO.Save(COLLECTION_USERS, &newUser)
 	if err != nil {
 		glog.Warning("Error saving new user to db: ", err)
 		httptypes.SendDuplicated(httptypes.EMPTY_CONTENT, response)
 	} else {
-		theuser := types.User{}
-		if err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).FindOne(newUser, &theuser); err != nil {
-			glog.Infof("Error finding the original user I just created. ", err)
-			httptypes.SendGeneralError(nil, response)
-		}
 		glog.Infof("Created new user: ", newUser)
-		sanitization.UserSanitization(&theuser)
-		httptypes.SendCreated(theuser, response)
+		sanitization.UserSanitization(&newUser)
+		httptypes.SendCreated(newUser, response)
 	}
 }
 
@@ -150,7 +142,7 @@ func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Re
 func (u *UserResource) getUser(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("user-id")
 	user := types.User{}
-	err := db.MONGO_CONNECTION.Collection(COLLECTION_USERS).FindById(bson.ObjectIdHex(id), &user)
+	err := db.MONGO.FindById(COLLECTION_USERS, &user, id)
 	if err != nil {
 		httptypes.SendNotFound(nil, response)
 		return
@@ -162,7 +154,26 @@ func (u *UserResource) getUser(request *restful.Request, response *restful.Respo
 }
 
 func (u *UserResource) patchUser(request *restful.Request, response *restful.Response) {
+	id := request.PathParameter("user-id")
 
+	user := types.User{}
+	sentUser := types.User{}
+	err := db.MONGO.FindById(COLLECTION_USERS, &user, id)
+	if err != nil {
+		httptypes.SendNotFound(nil, response)
+		return
+	}
+
+	decoder := json.NewDecoder(request.Request.Body)
+	decoder.Decode(&sentUser) // TODO error handling
+
+	validation.MergeChangedUser(&user, &sentUser)
+
+	glog.Info("New user: ", user)
+
+	db.MONGO.Save(COLLECTION_USERS, &user)
+	sanitization.UserSanitization(&user)
+	httptypes.SendOK(user, response)
 }
 
 func (u *UserResource) getTokens(request *restful.Request, response *restful.Response) {
@@ -182,7 +193,10 @@ func (u *UserResource) getDevices(request *restful.Request, response *restful.Re
 }
 
 func (u *UserResource) registerUser(request *restful.Request, response *restful.Response) {
-
+	user := types.User{}
+	decoder := json.NewDecoder(request.Request.Body)
+	decoder.Decode(&user) // TODO error handling
+	user.Activated = false
 }
 
 func (u *UserResource) activateUser(request *restful.Request, response *restful.Response) {
