@@ -7,6 +7,7 @@ import (
 	"strings"
 	"github.com/golang/glog"
 	"reflect"
+	"net/http"
 )
 
 const DEFAULT_LIMIT = 50
@@ -44,17 +45,15 @@ func GetFilters(values url.Values, mytype interface{}) (bson.M, error) {
 	for key, val := range values {
 		if strings.HasPrefix(key, "filter[") {
 			xkey := key[filterLen:len(key)-1]
-			glog.Info("Getting foo: ", reflect.Indirect(reflect.ValueOf(mytype)).FieldByName(xkey))
 			xvalue := reflect.ValueOf(mytype)
 			var mykind reflect.Kind
 			for i := 0; i < reflect.Indirect(xvalue).NumField(); i++ {
 				tag := string(reflect.TypeOf(mytype).Elem().Field(i).Tag.Get("json"))
-				glog.Info("Checking for tag: ", tag)
-				if tag == xkey {
+				if strings.Split(tag,",")[0] == xkey {
 					mykind = reflect.TypeOf(mytype).Elem().Field(i).Type.Kind()
 				}
 			}
-			glog.Info("Kind: ", mykind)
+
 			if mykind == reflect.Int {
 				filtersObj[xkey], err = strconv.Atoi(val[0])
 				if err != nil {
@@ -75,4 +74,14 @@ func GetFilters(values url.Values, mytype interface{}) (bson.M, error) {
 	}
 
 	return filtersObj, nil
+}
+
+func GetToken(req *http.Request) string {
+	if tokens, ok := req.Header["Authorization"]; ok {
+		if len(tokens) > 0 {
+			return strings.TrimPrefix(tokens[0], "Bearer ")
+		}
+	}
+
+	return ""
 }

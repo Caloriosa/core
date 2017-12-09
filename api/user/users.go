@@ -91,7 +91,7 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 	db.MONGO.Get(COLLECTION_USERS, &users, filters, page, limit)
 
 	for index := range users {
-		sanitization.UserSanitization(&users[index])
+		sanitization.UserSanitization(&users[index], true) // todo not a strict sanitization
 	}
 
 	httptypes.SendOK(users, response)
@@ -122,13 +122,34 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 		httptypes.SendDuplicated(httptypes.EMPTY_CONTENT, response)
 	} else {
 		glog.Infof("Created new user: ", newUser)
-		sanitization.UserSanitization(&newUser)
+		sanitization.UserSanitization(&newUser, true) // todo not a strict sanitization
 		httptypes.SendCreated(newUser, response)
 	}
 }
 
 func (u *UserResource) getSelf(request *restful.Request, response *restful.Response) {
+	token := tools.GetToken(request.Request)
+	if token == "" {
+		httptypes.SendBadAuth(response)
+		return
+	}
 
+	uid, err := tools.GetUserFromToken(token)
+	if uid == "" {
+		httptypes.SendBadAuth(response)
+		return
+	}
+
+	user := types.User{}
+	err = db.MONGO.FindById(COLLECTION_USERS, &user, uid.Hex())
+	if err != nil {
+		httptypes.SendNotFound(nil, response)
+		return
+	}
+
+	sanitization.UserSanitization(&user, false)
+
+	httptypes.SendOK(user, response)
 }
 
 func (u *UserResource) putSelf(request *restful.Request, response *restful.Response) {
@@ -152,7 +173,7 @@ func (u *UserResource) getUser(request *restful.Request, response *restful.Respo
 		return
 	}
 
-	sanitization.UserSanitization(&user)
+	sanitization.UserSanitization(&user, true) // todo not a strict sanitization
 
 	httptypes.SendOK(user, response)
 }
@@ -176,7 +197,7 @@ func (u *UserResource) patchUser(request *restful.Request, response *restful.Res
 	glog.Info("New user: ", user)
 
 	db.MONGO.Save(COLLECTION_USERS, &user)
-	sanitization.UserSanitization(&user)
+	sanitization.UserSanitization(&user, true) // todo not a strict sanitization
 	httptypes.SendOK(user, response)
 }
 

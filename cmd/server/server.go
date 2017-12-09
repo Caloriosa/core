@@ -9,6 +9,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"net/http"
+	"core/api/auth"
 )
 
 var VERSION = "Unknown-build"
@@ -33,6 +34,7 @@ func main() {
 
 	userapi.Register(restful.DefaultContainer)
 	deviceapi.Register(restful.DefaultContainer)
+	auth.Register(restful.DefaultContainer)
 
 
 	err = http.ListenAndServe(":8080", nil)

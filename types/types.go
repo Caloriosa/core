@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/go-bongo/bongo"
 	"time"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Device struct {
@@ -42,8 +43,8 @@ type Token struct {
 	Token              string `json:"token"`
 	Type               string `json:"type"`
 	ExpireAt           time.Time`json:"expireat"`
-	User               *User `json:"user"`
-	Device             *Device `json:"device"`
+	User               *bson.ObjectId
+	Device             *bson.ObjectId
 }
 
 const (
@@ -54,8 +55,8 @@ const (
 type User struct {
 	bongo.DocumentBase `bson:",inline"`
 	Login              string `json:"login"`
-	Password           string `json:"password"`
-	Email              string `json:"email"`
+	Password           string `json:"password,omitempty"`
+	Email              string `json:"email,omitempty"`
 	Name               string `json:"name"`
 	Activated          bool `json:"activated"`
 	Role               string `json:"role"`

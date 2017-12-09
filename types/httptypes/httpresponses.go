@@ -48,3 +48,7 @@ func SendInvalidData(content interface{}, r *restful.Response) error {
 func SendGeneralError(content interface{}, r *restful.Response) error {
 	return Send(http.StatusInternalServerError, "DATASOURCE_ERROR", "error fetching data", content, r)
 }
+
+func SendBadAuth(r *restful.Response) error {
+	return Send(http.StatusUnauthorized, "UNAUTHORIZED", "you're not authoized", nil, r) // TODO correct message
+}
