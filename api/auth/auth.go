@@ -1,7 +1,6 @@
 package auth
 
 import (
-	user2 "core/api/user"
 	"core/pkg/db"
 	"core/pkg/tools"
 	"core/types"
@@ -11,6 +10,7 @@ import (
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
 	"time"
+	"core/pkg/lib/user"
 )
 
 const TOKEN_COLLECTION = "tokens"
@@ -47,7 +47,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 		return
 	}
 
-	err := db.MONGO.Get(user2.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login, "password": user.Password}, 0, 1)
+	err := db.MONGO.Get(userlib.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login, "password": user.Password}, 0, 1)
 	if err != nil {
 		httptypes.SendGeneralError(nil, response)
 		glog.Warning("auth: ", err)
@@ -90,6 +90,11 @@ func (u *AuthResource) refresh(request *restful.Request, response *restful.Respo
 
 func (u *AuthResource) logout(request *restful.Request, response *restful.Response) {
 	token := tools.GetToken(request.Request)
+	if token == nil {
+		glog.Info("Invalid token")
+		httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)
+		return
+	}
 	db.MONGO.Connection.Collection(tools.COLLECTION_TOKENS).DeleteDocument(token)
 
 	httptypes.SendOK(nil, response)

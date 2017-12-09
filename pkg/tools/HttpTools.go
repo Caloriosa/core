@@ -81,15 +81,20 @@ func GetFilters(values url.Values, mytype interface{}) (map[string]interface{}, 
 }
 
 func GetToken(req *http.Request) *types.Token {
-	mytoken := new(types.Token)
+	mytoken := []types.Token{}
+	glog.Info("Headers: ", req.Header)
 	if tokens, ok := req.Header["Authorization"]; ok {
+		glog.Info("Found tokens: ", tokens)
 		if len(tokens) > 0 {
-			if err := db.MONGO.Get(COLLECTION_TOKENS, &mytoken, bson.M{"token": tokens[0]}, 0, 1); err == nil {
-				if mytoken.ExpireAt.Before(time.Now().UTC()) {
-					return mytoken
+			glog.Info("X token: ", tokens[0], "token: ", mytoken)
+			xtoken := strings.TrimPrefix(tokens[0], "Bearer ")
+			if err := db.MONGO.Get(COLLECTION_TOKENS, &mytoken, bson.M{"token": xtoken}, 0, 1); err == nil {
+				glog.Info("Extracted token: ", mytoken)
+				if mytoken[0].ExpireAt.Before(time.Now().UTC()) {
+					return &mytoken[0]
 				} else {
-					db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(mytoken)
-					print("Deleting expired token.")
+					db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(&mytoken[0])
+					glog.Info("Deleting expired token.")
 				}
 			}
 		}

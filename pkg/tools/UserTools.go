@@ -4,19 +4,45 @@ import (
 	"core/pkg/db"
 	"core/types"
 	"gopkg.in/mgo.v2/bson"
+	"core/pkg/error"
+	"core/types/httptypes"
+	"core/pkg/lib/user"
+	"net/http"
 )
 
 const COLLECTION_TOKENS = "tokens"
 
-func GetUserFromToken(token string) (bson.ObjectId, error) {
+func GetUserFromTokenString(token string) (bson.ObjectId, *errors.CalError) {
 	xtokens := []types.Token{}
 	err := db.MONGO.Get(COLLECTION_TOKENS, &xtokens, bson.M{"token": token}, 0, 1)
 	if err != nil {
-		return "", err
+		return "", &errors.CalError{Status:&httptypes.UNKNOWN}
 	}
 	if len(xtokens) == 0 {
-		return "", nil
+		return "", &errors.CalError{Status:&httptypes.INVALID_TOKEN}
 	}
 
 	return *xtokens[0].User, nil
+}
+
+func GetUserFromRequest(r *http.Request) (*types.User, *errors.CalError) {
+	token := GetToken(r)
+	if token == nil {
+		return nil, &errors.CalError{Status: &httptypes.DATA_INCOMPLETE}
+	}
+
+	uid, err := GetUserFromTokenString(token.Token)
+	if err != nil {
+		return nil, &errors.CalError{Status: &httptypes.DATASOURCE_ERROR}
+	}
+	if uid == "" {
+		return nil, &errors.CalError{Status: &httptypes.INVALID_TOKEN}
+	}
+
+	user := types.User{}
+	if err := userlib.FindUserById(uid.Hex(), &user); err != nil {
+		return nil, &errors.CalError{Status: &httptypes.INVALID_TOKEN}
+	}
+
+	return &user, nil
 }

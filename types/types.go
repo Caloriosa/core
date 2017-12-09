@@ -60,6 +60,7 @@ type User struct {
 	Name               string `json:"name"`
 	Activated          bool   `json:"activated"`
 	Role               string `json:"role"`
+	ActivationKey      string `json:"-"`
 }
 
 const (

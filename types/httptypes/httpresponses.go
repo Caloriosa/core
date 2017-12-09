@@ -6,6 +6,7 @@ import (
 )
 
 type HttpResponseStatus struct {
+	HttpCode int `json:"-"`
 	Code    string `json:"code"`
 	Message string `json:"message"`
 }
@@ -15,14 +16,21 @@ type HttpResponsePack struct {
 	Content interface{}        `json:"content"`
 }
 
-var EMPTY_CONTENT interface{}
+var EMPTY_CONTENT map[int]interface{}
 
 func Send(httpcode int, code, message string, content interface{}, r *restful.Response) error {
+	if content == nil {
+		content = EMPTY_CONTENT // apparently nil is bad, let's send empty {} brackets
+	}
 	h := HttpResponsePack{
-		HttpResponseStatus{code, message},
+		HttpResponseStatus{Code: code, Message: message},
 		content,
 	}
 	return r.WriteHeaderAndJson(httpcode, h, restful.MIME_JSON)
+}
+
+func SendResponse(r *restful.Response, resp *HttpResponseStatus, content interface{}) error {
+	return r.WriteHeaderAndJson(resp.HttpCode, HttpResponsePack{Status: *resp, Content: content}, restful.MIME_JSON)
 }
 
 func SendOK(content interface{}, r *restful.Response) error {
@@ -52,3 +60,31 @@ func SendGeneralError(content interface{}, r *restful.Response) error {
 func SendBadAuth(r *restful.Response) error {
 	return Send(http.StatusUnauthorized, "UNAUTHORIZED", "you're not authoized", nil, r) // TODO correct message
 }
+
+var HTTP_RESPONSE_OK = HttpResponseStatus{HttpCode: http.StatusOK, Code: "OK", Message: "OK"}
+var DUPLICATED = HttpResponseStatus{HttpCode: http.StatusConflict, Code: "DUPLICATED", Message: "Duplicated content or resource"}
+var NOT_FOUND = HttpResponseStatus{HttpCode: http.StatusNotFound, Code: "NOT_FOUND", Message: "Resource not found"}
+var DATASOURCE_ERROR = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "DATASOURCE_ERROR", Message: "An error occurred with datasource (database)"}
+var PERMISSION_DENIED = HttpResponseStatus{HttpCode: http.StatusForbidden, Code: "PERMISSION_DENIED", Message: "Permission denied"}
+var UNAVAILABLE = HttpResponseStatus{HttpCode: http.StatusGone, Code: "UNAVAILABLE", Message: "Requested resource or content is not available"}
+var REMOVE_FAILED = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "REMOVE_FAILED", Message: "Resource or content remove failed"}
+var AUTH_FAILED = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "AUTH_FAILED", Message: "Authentication failed"}
+var INVALID_DATA = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_DATA", Message: "Invalid data"}
+var INVALID_CREDENTIALS = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "INVALID_CREDENTIALS", Message: "Invalid credentials (login, password)"}
+var INVALID_SENSOR = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_SENSOR", Message: "Sensor(s) is invalid or not exists"}
+var INVALID_TOKEN = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "INVALID_TOKEN", Message: "Your token is not valid"}
+var TOKEN_EXPIRED = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "TOKEN_EXPIRED", Message: "Token expired. Please re-login"}
+var USER_EXISTS = HttpResponseStatus{HttpCode: http.StatusConflict, Code: "USER_EXISTS", Message: "User %s exists"}
+var WEAK_PASSWORD = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "WEAK_PASSWORD", Message: "Choosed password is too weak"}
+var INVALID_PASSWORD = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_PASSWORD", Message: "OK"}
+var INVALID_USERNAME = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_USERNAME", Message: "OK"}
+var INVALID_EMAIL = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_EMAIL", Message: "OK"}
+var PASSWORD_MISMATCH = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "PASSWORD_MISMATCH", Message: "OK"}
+var ACTIVATION_FAILED = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "ACTIVATION_FAILED", Message: "OK"}
+var DATA_INCOMPLETE = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "DATA_INCOMPLETE", Message: "OK"}
+var METHOD_NOT_ALLOWED = HttpResponseStatus{HttpCode: http.StatusMethodNotAllowed, Code: "METHOD_NOT_ALLOWED", Message: "OK"}
+var NOT_IMPLEMENTED = HttpResponseStatus{HttpCode: http.StatusNotImplemented, Code: "NOT_IMPLEMENTED", Message: "OK"}
+var TIMED_OUT = HttpResponseStatus{HttpCode: http.StatusRequestTimeout, Code: "TIMED_OUT", Message: "OK"}
+var SERVICE_UNAVAILABLE = HttpResponseStatus{HttpCode: http.StatusServiceUnavailable, Code: "SERVICE_UNAVAILABLE", Message: "OK"}
+var BUSY = HttpResponseStatus{HttpCode: http.StatusServiceUnavailable, Code: "BUSY", Message: "OK"}
+var UNKNOWN = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "UNKNOWN", Message: "OK"}
