@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-func ValidateNewUser (user *types.User) error {
+func ValidateNewUser(user *types.User) error {
 	if user.Email == "" {
 		return errors.New("Missing e-mail")
 	}
@@ -18,7 +18,7 @@ func ValidateNewUser (user *types.User) error {
 	return ValidateEmail(user.Email)
 }
 
-func MergeChangedUser (user *types.User, with *types.User) {
+func MergeChangedUser(user *types.User, with *types.User) {
 	if with.Login != "" {
 		user.Login = with.Login
 	}

@@ -1,22 +1,21 @@
 package auth
 
 import (
-	"github.com/emicklei/go-restful"
-	"core/types"
-	"core/pkg/db"
 	user2 "core/api/user"
-	"encoding/json"
-	"core/types/httptypes"
-	"github.com/golang/glog"
-	"time"
+	"core/pkg/db"
 	"core/pkg/tools"
+	"core/types"
+	"core/types/httptypes"
+	"encoding/json"
+	"github.com/emicklei/go-restful"
+	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
+	"time"
 )
 
 const TOKEN_COLLECTION = "tokens"
 
 type AuthResource struct {
-
 }
 
 func Register(container *restful.Container) {

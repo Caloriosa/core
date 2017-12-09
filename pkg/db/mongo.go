@@ -1,12 +1,12 @@
 package db
 
 import (
+	"errors"
 	"github.com/go-bongo/bongo"
 	"github.com/golang/glog"
+	"gopkg.in/mgo.v2/bson"
 	"os"
 	"time"
-	"gopkg.in/mgo.v2/bson"
-	"errors"
 )
 
 var MONGO *MongoDB
@@ -57,7 +57,7 @@ func (m *MongoDB) Save(collection string, data bongo.Document) error {
 	return m.Connection.Collection(collection).Save(data)
 }
 
-func NewMongo() (error) {
+func NewMongo() error {
 
 	MONGO = &MongoDB{}
 

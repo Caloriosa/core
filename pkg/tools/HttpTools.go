@@ -1,16 +1,16 @@
 package tools
 
 import (
-	"net/url"
-	"strconv"
-	"gopkg.in/mgo.v2/bson"
-	"strings"
-	"github.com/golang/glog"
-	"reflect"
-	"net/http"
-	"fmt"
-	"core/types"
 	"core/pkg/db"
+	"core/types"
+	"fmt"
+	"github.com/golang/glog"
+	"gopkg.in/mgo.v2/bson"
+	"net/http"
+	"net/url"
+	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -20,7 +20,7 @@ func GetPagination(values url.Values) (int, int, error) {
 	var page, limit int
 	var err error
 
-	if val, ok := values["page"]; ok  {
+	if val, ok := values["page"]; ok {
 		page, err = strconv.Atoi(val[0])
 		if err != nil {
 			return 0, 0, err
@@ -48,12 +48,12 @@ func GetFilters(values url.Values, mytype interface{}) (map[string]interface{}, 
 
 	for key, val := range values {
 		if strings.HasPrefix(key, "filter[") {
-			xkey := key[filterLen:len(key)-1]
+			xkey := key[filterLen : len(key)-1]
 			xvalue := reflect.ValueOf(mytype)
 			var mykind reflect.Kind
 			for i := 0; i < reflect.Indirect(xvalue).NumField(); i++ {
 				tag := string(reflect.TypeOf(mytype).Elem().Field(i).Tag.Get("json"))
-				if strings.Split(tag,",")[0] == xkey {
+				if strings.Split(tag, ",")[0] == xkey {
 					mykind = reflect.TypeOf(mytype).Elem().Field(i).Type.Kind()
 				}
 			}

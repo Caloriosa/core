@@ -2,15 +2,15 @@ package user
 
 import (
 	"core/pkg/db"
+	"core/pkg/sanitization"
+	"core/pkg/tools"
+	"core/pkg/validation"
 	"core/types"
 	"core/types/httptypes"
+	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"core/pkg/sanitization"
-	"core/pkg/validation"
-	"encoding/json"
-	"core/pkg/tools"
 )
 
 const COLLECTION_USERS = "users"
@@ -27,7 +27,6 @@ func Register(container *restful.Container) {
 	collation := mgo.Collation{Locale: "cs", Strength: 2}
 
 	if err := db.MONGO.Connection.Collection(COLLECTION_USERS).Collection().
-
 		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
@@ -86,7 +85,6 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 
 	filters, err := tools.GetFilters(request.Request.URL.Query(), &types.User{})
 	glog.Infof("Filters: ", filters)
-
 
 	db.MONGO.Get(COLLECTION_USERS, &users, filters, page, limit)
 
