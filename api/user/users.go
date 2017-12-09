@@ -84,7 +84,11 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 		httptypes.SendGeneralError(nil, response)
 	}
 
-	db.MONGO.GetAll(COLLECTION_USERS, &users, page, limit)
+	filters, err := tools.GetFilters(request.Request.URL.Query(), &types.User{})
+	glog.Infof("Filters: ", filters)
+
+
+	db.MONGO.Get(COLLECTION_USERS, &users, filters, page, limit)
 
 	for index := range users {
 		sanitization.UserSanitization(&users[index])
