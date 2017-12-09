@@ -8,6 +8,10 @@ import (
 	"github.com/golang/glog"
 	"reflect"
 	"net/http"
+	"fmt"
+	"core/types"
+	"core/pkg/db"
+	"time"
 )
 
 const DEFAULT_LIMIT = 50
@@ -37,7 +41,7 @@ func GetPagination(values url.Values) (int, int, error) {
 	return page, limit, nil
 }
 
-func GetFilters(values url.Values, mytype interface{}) (bson.M, error) {
+func GetFilters(values url.Values, mytype interface{}) (map[string]interface{}, error) {
 	filtersObj := bson.M{}
 	var err error
 	filterLen := len("filter[")
@@ -66,7 +70,7 @@ func GetFilters(values url.Values, mytype interface{}) (bson.M, error) {
 					filtersObj[xkey] = false
 				}
 			} else if mykind == reflect.String {
-				filtersObj[xkey] = val[0]
+				filtersObj[xkey] = bson.M{"$regex": bson.RegEx{Pattern: fmt.Sprintf("^%s$", val[0]), Options: "i"}}
 			}
 
 			glog.Info("Adding %s = %s to filters", xkey, val)
@@ -76,12 +80,20 @@ func GetFilters(values url.Values, mytype interface{}) (bson.M, error) {
 	return filtersObj, nil
 }
 
-func GetToken(req *http.Request) string {
+func GetToken(req *http.Request) *types.Token {
+	mytoken := new(types.Token)
 	if tokens, ok := req.Header["Authorization"]; ok {
 		if len(tokens) > 0 {
-			return strings.TrimPrefix(tokens[0], "Bearer ")
+			if err := db.MONGO.Get(COLLECTION_TOKENS, &mytoken, bson.M{"token": tokens[0]}, 0, 1); err == nil {
+				if mytoken.ExpireAt.Before(time.Now().UTC()) {
+					return mytoken
+				} else {
+					db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(mytoken)
+					print("Deleting expired token.")
+				}
+			}
 		}
 	}
 
-	return ""
+	return nil
 }

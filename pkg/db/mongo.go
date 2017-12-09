@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 	"gopkg.in/mgo.v2/bson"
+	"errors"
 )
 
 var MONGO *MongoDB
@@ -42,6 +43,9 @@ func (m *MongoDB) Get(collection string, caster interface{}, findBy interface{},
 }
 
 func (m *MongoDB) FindById(collection string, caster interface{}, id string) error {
+	if !bson.IsObjectIdHex(id) {
+		return errors.New("Not an objectID hex")
+	}
 	return m.Connection.Collection(collection).FindById(bson.ObjectIdHex(id), caster)
 }
 

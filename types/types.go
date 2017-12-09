@@ -43,8 +43,8 @@ type Token struct {
 	Token              string `json:"token"`
 	Type               string `json:"type"`
 	ExpireAt           time.Time`json:"expireat"`
-	User               *bson.ObjectId
-	Device             *bson.ObjectId
+	User               *bson.ObjectId `json:"user"`
+	Device             *bson.ObjectId `json:"device"`
 }
 
 const (

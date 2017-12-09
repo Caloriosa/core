@@ -129,12 +129,12 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 
 func (u *UserResource) getSelf(request *restful.Request, response *restful.Response) {
 	token := tools.GetToken(request.Request)
-	if token == "" {
+	if token == nil {
 		httptypes.SendBadAuth(response)
 		return
 	}
 
-	uid, err := tools.GetUserFromToken(token)
+	uid, err := tools.GetUserFromToken(token.Token)
 	if uid == "" {
 		httptypes.SendBadAuth(response)
 		return

@@ -30,6 +30,8 @@ func (u *AuthResource) Register(container *restful.Container) {
 
 	// auth
 	ws.Route(ws.POST("").To(u.auth))
+	ws.Route(ws.PATCH("").To(u.refresh))
+	ws.Route(ws.DELETE("").To(u.logout))
 
 	container.Add(ws)
 
@@ -75,4 +77,21 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	}
 
 	httptypes.SendOK(token, response)
+}
+
+func (u *AuthResource) refresh(request *restful.Request, response *restful.Response) {
+	token := tools.GetToken(request.Request)
+	token.ExpireAt = time.Now().UTC()
+	token.ExpireAt.Add(48 * time.Hour)
+	db.MONGO.Save(tools.COLLECTION_TOKENS, token)
+
+	httptypes.SendOK(token, response)
+
+}
+
+func (u *AuthResource) logout(request *restful.Request, response *restful.Response) {
+	token := tools.GetToken(request.Request)
+	db.MONGO.Connection.Collection(tools.COLLECTION_TOKENS).DeleteDocument(token)
+
+	httptypes.SendOK(nil, response)
 }
