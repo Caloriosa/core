@@ -16,7 +16,7 @@ type HttpResponsePack struct {
 	Content interface{}        `json:"content"`
 }
 
-var EMPTY_CONTENT map[int]interface{}
+var EMPTY_CONTENT = map[string]string{}
 
 func Send(httpcode int, code, message string, content interface{}, r *restful.Response) error {
 	if content == nil {

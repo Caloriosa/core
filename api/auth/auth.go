@@ -11,9 +11,10 @@ import (
 	"gopkg.in/mgo.v2/bson"
 	"time"
 	"core/pkg/lib/user"
+	"gopkg.in/mgo.v2"
 )
 
-const TOKEN_COLLECTION = "tokens"
+const COLLECTION_TOKENS = "tokens"
 
 type AuthResource struct {
 }
@@ -21,6 +22,13 @@ type AuthResource struct {
 func Register(container *restful.Container) {
 	u := AuthResource{}
 	u.Register(container)
+
+	collation := mgo.Collation{Locale: "cs", Strength: 2}
+
+	if err := db.MONGO.Connection.Collection(COLLECTION_TOKENS).Collection().
+		EnsureIndex(mgo.Index{Key: []string{"token"}, Unique: true, Collation: &collation}); err != nil {
+		glog.Fatalf("Error ensuring index: ", err)
+	}
 }
 
 func (u *AuthResource) Register(container *restful.Container) {
@@ -68,7 +76,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	token.User = &foundUser[0].DocumentBase.Id
 	token.Device = nil
 
-	err = db.MONGO.Save(tools.COLLECTION_TOKENS, &token)
+	err = db.MONGO.Save(COLLECTION_TOKENS, &token)
 	if err != nil {
 		httptypes.SendGeneralError(nil, response)
 		glog.Warning("auth2: ", err)
@@ -82,7 +90,7 @@ func (u *AuthResource) refresh(request *restful.Request, response *restful.Respo
 	token := tools.GetToken(request.Request)
 	token.ExpireAt = time.Now().UTC()
 	token.ExpireAt.Add(48 * time.Hour)
-	db.MONGO.Save(tools.COLLECTION_TOKENS, token)
+	db.MONGO.Save(COLLECTION_TOKENS, token)
 
 	httptypes.SendOK(token, response)
 
@@ -95,7 +103,7 @@ func (u *AuthResource) logout(request *restful.Request, response *restful.Respon
 		httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)
 		return
 	}
-	db.MONGO.Connection.Collection(tools.COLLECTION_TOKENS).DeleteDocument(token)
+	db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(token)
 
 	httptypes.SendOK(nil, response)
 }
