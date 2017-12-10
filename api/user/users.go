@@ -1,7 +1,9 @@
 package user
 
 import (
+	"core/api/auth"
 	"core/pkg/db"
+	"core/pkg/lib/user"
 	"core/pkg/sanitization"
 	"core/pkg/tools"
 	"core/pkg/validation"
@@ -11,9 +13,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"core/pkg/lib/user"
 )
-
 
 const DEFAULT_LIMIT = 50
 
@@ -34,6 +34,11 @@ func Register(container *restful.Container) {
 
 	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
 		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true, Collation: &collation}); err != nil {
+		glog.Fatalf("Error ensuring index: ", err)
+	}
+
+	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
+		EnsureIndex(mgo.Index{Key: []string{"activationkey"}, Unique: true, Collation: &collation, Sparse: true}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 }
@@ -229,6 +234,7 @@ func (u *UserResource) registerUser(request *restful.Request, response *restful.
 
 	newUser.Activated = false
 	newUser.Role = types.RoleUser
+	newUser.ActivationKey = tools.RandStringRunes(auth.LENGTH_TOKEN)
 
 	if err := userlib.CreateUser(&newUser); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
@@ -245,10 +251,14 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 	decoder.Decode(&foo) // TODO error handling
 
 	if val, ok := foo["activation_token"]; ok {
-		if err := userlib.ActivateUserByActToken(val); err == nil {
-
+		if user, err := userlib.ActivateUserByActToken(val); err == nil {
+			sanitization.UserSanitization(user, true)
+			httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
+			return
 		}
 	}
+
+	httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)
 }
 
 func (u *UserResource) resetPassword(request *restful.Request, response *restful.Response) {

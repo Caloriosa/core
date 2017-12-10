@@ -2,19 +2,20 @@ package auth
 
 import (
 	"core/pkg/db"
+	"core/pkg/lib/user"
 	"core/pkg/tools"
 	"core/types"
 	"core/types/httptypes"
 	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
-	"core/pkg/lib/user"
-	"gopkg.in/mgo.v2"
 )
 
 const COLLECTION_TOKENS = "tokens"
+const LENGTH_TOKEN = 32
 
 type AuthResource struct {
 }
@@ -69,7 +70,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 
 	// create token
 	token := types.Token{}
-	token.Token = "123" // todo haha unique
+	token.Token = tools.RandStringRunes(LENGTH_TOKEN)
 	token.Type = types.TokenUser
 	token.ExpireAt = time.Now().UTC()
 	token.ExpireAt.Add(48 * time.Hour) // 2 days
@@ -83,6 +84,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 		return
 	}
 
+	glog.Info("Creating token: ", token)
 	httptypes.SendOK(token, response)
 }
 

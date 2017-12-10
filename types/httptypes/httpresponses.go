@@ -6,9 +6,9 @@ import (
 )
 
 type HttpResponseStatus struct {
-	HttpCode int `json:"-"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	HttpCode int    `json:"-"`
+	Code     string `json:"code"`
+	Message  string `json:"message"`
 }
 
 type HttpResponsePack struct {

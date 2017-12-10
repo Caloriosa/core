@@ -1,11 +1,11 @@
 package userlib
 
 import (
-	"core/types"
+	"core/pkg/db"
 	"core/pkg/error"
 	"core/pkg/validation"
+	"core/types"
 	"core/types/httptypes"
-	"core/pkg/db"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -27,7 +27,7 @@ func CreateUser(newUser *types.User) *errors.CalError {
 func FindUserById(id string, user *types.User) *errors.CalError {
 	err := db.MONGO.FindById(COLLECTION_USERS, &user, id)
 	if err != nil {
-		return &errors.CalError{Status:&httptypes.NOT_FOUND}
+		return &errors.CalError{Status: &httptypes.NOT_FOUND}
 	}
 
 	return nil
@@ -36,7 +36,7 @@ func FindUserById(id string, user *types.User) *errors.CalError {
 func SaveUser(user *types.User) *errors.CalError {
 	err := db.MONGO.Save(COLLECTION_USERS, user)
 	if err != nil {
-		return &errors.CalError{Status:&httptypes.UNAVAILABLE}
+		return &errors.CalError{Status: &httptypes.UNAVAILABLE}
 	}
 
 	return nil
@@ -50,14 +50,15 @@ func DeleteUser(user *types.User) *errors.CalError {
 	return nil
 }
 
-func ActivateUserByActToken(token string) *errors.CalError {
+func ActivateUserByActToken(token string) (*types.User, *errors.CalError) {
 	user := types.User{}
 	if err := db.MONGO.Get(COLLECTION_USERS, &user, bson.M{"activationkey": token}, 0, 1); err != nil {
-		return &errors.CalError{Status: &httptypes.INVALID_TOKEN}
+		return nil, &errors.CalError{Status: &httptypes.INVALID_TOKEN}
 	}
 
 	user.Activated = true
+	user.ActivationKey = ""
 	db.MONGO.Save(COLLECTION_USERS, &user)
 
-	return nil
+	return &user, nil
 }
