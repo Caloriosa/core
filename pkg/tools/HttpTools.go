@@ -94,7 +94,9 @@ func GetToken(req *http.Request) *types.Token {
 					return nil
 				}
 
-				if mytoken[0].ExpireAt.Before(time.Now().UTC()) {
+				glog.Info("ExpireAt: ", mytoken[0].ExpireAt.UTC(), " now: ", time.Now().UTC(), "is ok? ", mytoken[0].ExpireAt.Before(time.Now().UTC()))
+
+				if mytoken[0].ExpireAt.UTC().After(time.Now().UTC()) {
 					return &mytoken[0]
 				} else {
 					db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(&mytoken[0])

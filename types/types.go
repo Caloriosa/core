@@ -8,22 +8,21 @@ import (
 
 type Device struct {
 	bongo.DocumentBase `bson:",inline"`
-	Title              string
-	Description        string
-	Location           string
-	FeaturedSensor     *Sensor
-	Tags               []string
-	CreatedAt          time.Time
+	Title              string         `json:"title"`
+	Description        string         `json:"description"`
+	Location           string         `json:"location"`
+	FeaturedSensor     *bson.ObjectId `json:"featuredsensor"`
+	Tags               []string       `json:"tags"`
+	User               *bson.ObjectId `json:"user"`
 }
 
 type Sensor struct {
 	bongo.DocumentBase `bson:",inline"`
-	Device             *Device
-	Alias              string
-	Title              string
-	Type               string
-	Description        string
-	CreatedAt          time.Time
+	Device             *bson.ObjectId `json:"device"`
+	Alias              string         `json:"alias"`
+	Title              string         `json:"title"`
+	Type               string         `json:"type"`
+	Description        string         `json:"description"`
 }
 
 const (

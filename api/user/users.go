@@ -3,6 +3,8 @@ package user
 import (
 	"core/api/auth"
 	"core/pkg/db"
+	"core/pkg/lib/devices"
+	"core/pkg/lib/tokenlib"
 	"core/pkg/lib/user"
 	"core/pkg/sanitization"
 	"core/pkg/tools"
@@ -208,19 +210,88 @@ func (u *UserResource) patchUser(request *restful.Request, response *restful.Res
 }
 
 func (u *UserResource) getTokens(request *restful.Request, response *restful.Response) {
+	tokens := []*types.Token{}
+	user, err := tools.GetUserFromRequest(request.Request)
+	if err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
 
+	if err := tokenlib.GetTokensForUser(user, tokens); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	httptypes.SendOK(tokens, response)
 }
 
 func (u *UserResource) getToken(request *restful.Request, response *restful.Response) {
+	uid := request.PathParameter("user-id")
+	tokenid := request.PathParameter("token-id")
+	user := types.User{}
+	if err := userlib.FindUserById(uid, &user); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
 
+	token := types.Token{}
+	if err := tokenlib.GetToken(tokenid, &token); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	if token.User.Hex() != user.Id.Hex() {
+		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
+		return
+	}
+
+	httptypes.SendOK(token, response)
 }
 
 func (u *UserResource) deleteToken(request *restful.Request, response *restful.Response) {
+	uid := request.PathParameter("user-id")
+	tokenid := request.PathParameter("token-id")
+	user := types.User{}
+	if err := userlib.FindUserById(uid, &user); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
 
+	token := types.Token{}
+	if err := tokenlib.GetToken(tokenid, &token); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	if token.User.Hex() != user.Id.Hex() {
+		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
+		return
+	}
+
+	if err := tokenlib.DeleteToken(&token); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	httptypes.SendOK(token, response)
 }
 
 func (u *UserResource) getDevices(request *restful.Request, response *restful.Response) {
+	uid := request.PathParameter("user-id")
+	devices := []types.Device{}
 
+	user := types.User{}
+	if err := userlib.FindUserById(uid, &user); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	if err := deviceslib.GetUsersDevices(&user, &devices); err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	httptypes.SendOK(devices, response)
 }
 
 func (u *UserResource) registerUser(request *restful.Request, response *restful.Response) {
@@ -250,7 +321,7 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&foo) // TODO error handling
 
-	if val, ok := foo["activation_token"]; ok {
+	if val, ok := foo["activation_token"]; ok && val != "" {
 		if user, err := userlib.ActivateUserByActToken(val); err == nil {
 			sanitization.UserSanitization(user, true)
 			httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
@@ -262,5 +333,6 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 }
 
 func (u *UserResource) resetPassword(request *restful.Request, response *restful.Response) {
-
+	// just generate a new token
+	// TODO where do I get userID?
 }

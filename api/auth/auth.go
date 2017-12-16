@@ -64,7 +64,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	}
 
 	if len(foundUser) == 0 {
-		httptypes.SendBadAuth(response)
+		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
 		return
 	}
 
@@ -72,8 +72,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	token := types.Token{}
 	token.Token = tools.RandStringRunes(LENGTH_TOKEN)
 	token.Type = types.TokenUser
-	token.ExpireAt = time.Now().UTC()
-	token.ExpireAt.Add(48 * time.Hour) // 2 days
+	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
 	token.User = &foundUser[0].DocumentBase.Id
 	token.Device = nil
 
@@ -90,8 +89,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 
 func (u *AuthResource) refresh(request *restful.Request, response *restful.Response) {
 	token := tools.GetToken(request.Request)
-	token.ExpireAt = time.Now().UTC()
-	token.ExpireAt.Add(48 * time.Hour)
+	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
 	db.MONGO.Save(COLLECTION_TOKENS, token)
 
 	httptypes.SendOK(token, response)
