@@ -59,10 +59,12 @@ type User struct {
 	Name               string `json:"name"`
 	Activated          bool   `json:"activated"`
 	Role               string `json:"role"`
-	ActivationKey      string `json:"-"`
+	ActivationKey      *string `json:"-"`
 }
 
 const (
 	RoleUser  = "member"
 	RoleAdmin = "admin"
 )
+
+const LENGTH_TOKEN = 32

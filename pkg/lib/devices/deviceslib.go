@@ -18,3 +18,11 @@ func GetUsersDevices(user *types.User, devices *[]types.Device) *errors.CalError
 
 	return nil
 }
+
+func SaveDevice(device *types.Device) *errors.CalError {
+	if err := db.MONGO.Save(COLLECTION_DEVICES, device); err != nil {
+		return &errors.CalError{Status: &httptypes.DATASOURCE_ERROR}
+	}
+
+	return nil
+}

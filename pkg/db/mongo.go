@@ -5,8 +5,8 @@ import (
 	"github.com/go-bongo/bongo"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
-	"os"
 	"time"
+	"core/pkg/config"
 )
 
 var MONGO *MongoDB
@@ -64,12 +64,12 @@ func NewMongo() error {
 	//mgo.SetDebug(true)
 	//mgo.SetLogger(log.New(os.Stderr, "", log.LstdFlags))
 
-	mongo_string := os.Getenv("MONGO_CONNECTION")
+	mongo_string := config.LoadedConfig.MongoConnection
 	if mongo_string == "" {
 		glog.Fatal("Missing MONGO_CONNECTION environment variable!")
 	}
 
-	mongo_config := &bongo.Config{mongo_string, "caloriosa"}
+	mongo_config := &bongo.Config{mongo_string, config.LoadedConfig.MongoDatabase}
 
 	if err := MONGO.connect(mongo_config); err != nil {
 		glog.Fatalf("Error connecting to MongoDB")

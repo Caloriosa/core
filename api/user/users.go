@@ -1,7 +1,6 @@
 package user
 
 import (
-	"core/api/auth"
 	"core/pkg/db"
 	"core/pkg/lib/devices"
 	"core/pkg/lib/tokenlib"
@@ -15,6 +14,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
+	"core/pkg/activation"
 )
 
 const DEFAULT_LIMIT = 50
@@ -104,16 +104,24 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 }
 
 func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
-	newUser := types.User{}
-	err := request.ReadEntity(&newUser)
+	authedUser, err := userlib.GetUserFromRequest(request.Request)
 	if err != nil {
+		httptypes.SendResponse(response, err.Status, nil)
+		return
+	}
+
+	if authedUser == nil || authedUser.Role != types.RoleAdmin {
+		httptypes.SendResponse(response, &httptypes.UNAUTHORIZED, nil)
+		return
+	}
+
+	newUser := types.User{}
+	err2 := request.ReadEntity(&newUser)
+	if err2 != nil {
 		httptypes.SendInvalidData(httptypes.EMPTY_CONTENT, response)
 		glog.Warning("Error parsing a new user: ", err)
 		return
 	}
-
-	newUser.Activated = false
-	newUser.Role = types.RoleUser
 
 	if err := userlib.CreateUser(&newUser); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
@@ -124,7 +132,7 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 }
 
 func (u *UserResource) getSelf(request *restful.Request, response *restful.Response) {
-	user, err := tools.GetUserFromRequest(request.Request)
+	user, err := userlib.GetUserFromRequest(request.Request)
 	if err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
@@ -136,7 +144,7 @@ func (u *UserResource) getSelf(request *restful.Request, response *restful.Respo
 }
 
 func (u *UserResource) patchSelf(request *restful.Request, response *restful.Response) {
-	user, err := tools.GetUserFromRequest(request.Request)
+	user, err := userlib.GetUserFromRequest(request.Request)
 	if err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
@@ -159,7 +167,7 @@ func (u *UserResource) patchSelf(request *restful.Request, response *restful.Res
 }
 
 func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Response) {
-	user, err := tools.GetUserFromRequest(request.Request)
+	user, err := userlib.GetUserFromRequest(request.Request)
 	if err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
@@ -211,7 +219,7 @@ func (u *UserResource) patchUser(request *restful.Request, response *restful.Res
 
 func (u *UserResource) getTokens(request *restful.Request, response *restful.Response) {
 	tokens := []*types.Token{}
-	user, err := tools.GetUserFromRequest(request.Request)
+	user, err := userlib.GetUserFromRequest(request.Request)
 	if err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
@@ -303,16 +311,17 @@ func (u *UserResource) registerUser(request *restful.Request, response *restful.
 		return
 	}
 
-	newUser.Activated = false
-	newUser.Role = types.RoleUser
-	newUser.ActivationKey = tools.RandStringRunes(auth.LENGTH_TOKEN)
-
 	if err := userlib.CreateUser(&newUser); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
 
+	newUser.Activated = false
+	userlib.SaveUser(&newUser)
+
 	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, newUser)
+
+	go activation.SendValidationEmail(&newUser)
 }
 
 func (u *UserResource) activateUser(request *restful.Request, response *restful.Response) {

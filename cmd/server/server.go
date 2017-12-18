@@ -10,16 +10,24 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"net/http"
+	"core/pkg/config"
 )
 
 var VERSION = "Unknown-build"
 
 func main() {
+	configfile := flag.String("config", "config.yaml", "Path to the config yaml file")
 	flag.Parse()
 
 	glog.Infof("Initializing Caloriosa Core V %s", VERSION)
 
 	var err error
+	err = config.LoadConfig(*configfile)
+	if err != nil {
+		glog.Fatal("Error loading config file: ", err)
+	}
+
+	glog.Info("Loaded config file: ", config.LoadedConfig)
 
 	err = db.NewMongo()
 	if err != nil {

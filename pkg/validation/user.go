@@ -19,9 +19,9 @@ func ValidateNewUser(user *types.User) error {
 }
 
 func MergeChangedUser(user *types.User, with *types.User) {
-	if with.Login != "" {
+	/*if with.Login != "" {
 		user.Login = with.Login
-	}
+	}*/
 
 	if with.Password != "" {
 		user.Password = with.Password
@@ -29,5 +29,9 @@ func MergeChangedUser(user *types.User, with *types.User) {
 
 	if with.Email != "" {
 		user.Email = with.Email
+	}
+
+	if with.Name != "" {
+		user.Name = with.Name
 	}
 }

@@ -1,5 +1,5 @@
-hash: 05c5b15479c05e01fabd9293711e676fce1a27f899782f60e279a971184d70de
-updated: 2017-12-03T11:04:30.6717925+01:00
+hash: 60a0dec5053720555ece4809db82d190c645f85adaab31996e486f5c8e8a6bdc
+updated: 2017-12-18T15:38:07.048348+01:00
 imports:
 - name: github.com/emicklei/go-restful
   version: 5741799b275a3c4a5a9623a993576d7545cf7b5c
@@ -13,6 +13,10 @@ imports:
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/oleiade/reflections
   version: 0e86b3c98b2ff33e30c85cfe97d9a63d439fe7eb
+- name: gopkg.in/alexcesaro/quotedprintable.v3
+  version: 2caba252f4dc53eaf6b553000885530023f54623
+- name: gopkg.in/gomail.v2
+  version: 81ebce5c23dfd25c6c67194b37d3dd3f338c98b1
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
@@ -20,4 +24,6 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
+- name: gopkg.in/yaml.v2
+  version: 287cf08546ab5e7e37d55a84f7ed3fd1db036de5
 testImports: []

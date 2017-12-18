@@ -15,7 +15,6 @@ import (
 )
 
 const COLLECTION_TOKENS = "tokens"
-const LENGTH_TOKEN = 32
 
 type AuthResource struct {
 }
@@ -70,7 +69,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 
 	// create token
 	token := types.Token{}
-	token.Token = tools.RandStringRunes(LENGTH_TOKEN)
+	token.Token = tools.RandStringRunes(types.LENGTH_TOKEN)
 	token.Type = types.TokenUser
 	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
 	token.User = &foundUser[0].DocumentBase.Id

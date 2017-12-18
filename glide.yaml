@@ -6,3 +6,6 @@ import:
   version: ~2.4.0
 - package: github.com/golang/glog
 - package: github.com/maxwellhealth/go-dotaccess
+- package: gopkg.in/gomail.v2
+  version: ~2.0.0
+- package: gopkg.in/yaml.v2
