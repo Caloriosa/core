@@ -19,6 +19,11 @@ type Config struct {
 	Dev struct {
 		TestEmailTo string `yaml:"TestEmailTo"`
 	} `yaml:"Dev"`
+
+	AppTokens []struct {
+		App string `yaml:"App"`
+		Token string `yaml:"Token"`
+	} `yaml:"AppTokens"`
 }
 
 var LoadedConfig *Config
