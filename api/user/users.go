@@ -1,6 +1,7 @@
 package user
 
 import (
+	"core/pkg/activation"
 	"core/pkg/db"
 	"core/pkg/lib/devices"
 	"core/pkg/lib/tokenlib"
@@ -14,7 +15,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"core/pkg/activation"
 )
 
 const DEFAULT_LIMIT = 50

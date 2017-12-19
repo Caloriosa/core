@@ -2,12 +2,12 @@ package activation
 
 import (
 	"bytes"
+	"core/pkg/config"
 	"core/types"
 	"crypto/tls"
 	"github.com/golang/glog"
-	"html/template"
 	"gopkg.in/gomail.v2"
-	"core/pkg/config"
+	"html/template"
 )
 
 func SendValidationEmail(user *types.User) error {
@@ -28,7 +28,7 @@ func SendValidationEmail(user *types.User) error {
 	//	smtp.PlainAuth("", "caloriosa", "caloriosa", "10.0.0.90"))
 
 	dialer := gomail.NewDialer(config.LoadedConfig.Email.SmtpHost, config.LoadedConfig.Email.SmtpPort, config.LoadedConfig.Email.SmtpUser, config.LoadedConfig.Email.SmtpPassword)
-	dialer.TLSConfig = &tls.Config{InsecureSkipVerify:true, ServerName:config.LoadedConfig.Email.SmtpHost}
+	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true, ServerName: config.LoadedConfig.Email.SmtpHost}
 	email := gomail.NewMessage()
 	email.SetHeader("From", config.LoadedConfig.Email.EmailFrom)
 	email.SetHeader("To", config.LoadedConfig.Dev.TestEmailTo)

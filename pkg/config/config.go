@@ -7,13 +7,13 @@ import (
 
 type Config struct {
 	MongoConnection string `yaml:"MongoConnection"`
-	MongoDatabase string `yaml:"MongoDatabase"`
-	Email struct {
-		SmtpHost string `yaml:"SmtpHost"`
-		SmtpPort int `yaml:"SmtpPort"`
-		SmtpUser string `yaml:"SmtpUser"`
+	MongoDatabase   string `yaml:"MongoDatabase"`
+	Email           struct {
+		SmtpHost     string `yaml:"SmtpHost"`
+		SmtpPort     int    `yaml:"SmtpPort"`
+		SmtpUser     string `yaml:"SmtpUser"`
 		SmtpPassword string `yaml:"SmtpPassword"`
-		EmailFrom string `yaml:"EmailFrom"`
+		EmailFrom    string `yaml:"EmailFrom"`
 	} `yaml:"Email"`
 
 	Dev struct {
@@ -21,7 +21,7 @@ type Config struct {
 	} `yaml:"Dev"`
 
 	AppTokens []struct {
-		App string `yaml:"App"`
+		App   string `yaml:"App"`
 		Token string `yaml:"Token"`
 	} `yaml:"AppTokens"`
 }

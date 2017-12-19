@@ -20,4 +20,3 @@ func EncodeUInt64(n uint64) string {
 
 	return s
 }
-

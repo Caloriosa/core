@@ -2,8 +2,8 @@ package validation
 
 import (
 	"core/pkg/error"
-	"core/types"
 	"core/pkg/lib/devices"
+	"core/types"
 )
 
 func ValidateNewDevice(device *types.Device) *errors.CalError {

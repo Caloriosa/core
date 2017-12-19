@@ -3,14 +3,14 @@ package userlib
 import (
 	"core/pkg/db"
 	"core/pkg/error"
+	"core/pkg/tools"
 	"core/pkg/validation"
 	"core/types"
 	"core/types/httptypes"
-	"gopkg.in/mgo.v2/bson"
 	"github.com/golang/glog"
-	"core/pkg/tools"
-	"net/http"
 	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+	"net/http"
 )
 
 const COLLECTION_USERS = "users"

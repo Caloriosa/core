@@ -3,12 +3,12 @@ package deviceslib
 import (
 	"core/pkg/db"
 	"core/pkg/error"
+	"core/pkg/tools"
 	"core/types"
 	"core/types/httptypes"
 	"gopkg.in/mgo.v2/bson"
-	"time"
 	"math/rand"
-	"core/pkg/tools"
+	"time"
 )
 
 const COLLECTION_DEVICES = "devices"
@@ -35,15 +35,15 @@ func GenerateDeviceUID() uint64 {
 	output := uint64(increment << OFFSET_INCREMENT)
 
 	// second part: random
-	output = output | uint64(RandomGenerator.Intn(RANDOM_MAX) << OFFSET_RANDOM)
+	output = output | uint64(RandomGenerator.Intn(RANDOM_MAX)<<OFFSET_RANDOM)
 
 	// third part: date
 	loc, _ := time.LoadLocation("UTC")
 	t := time.Now().Sub(time.Date(2017, 1, 1, 0, 0, 0, 0, loc))
-	output = output | uint64((t.Nanoseconds()/time.Millisecond.Nanoseconds()) << OFFSET_DATE)
+	output = output | uint64((t.Nanoseconds()/time.Millisecond.Nanoseconds())<<OFFSET_DATE)
 
 	// fourth part: prefix
-	output = output | uint64(PREFIX << OFFSET_PREFIX)
+	output = output | uint64(PREFIX<<OFFSET_PREFIX)
 
 	// increment the increment
 	increment = (increment + 1) % 1024
@@ -72,4 +72,3 @@ func SaveDevice(device *types.Device) *errors.CalError {
 
 	return nil
 }
-

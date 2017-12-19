@@ -1,12 +1,12 @@
 package db
 
 import (
+	"core/pkg/config"
 	"errors"
 	"github.com/go-bongo/bongo"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
 	"time"
-	"core/pkg/config"
 )
 
 var MONGO *MongoDB

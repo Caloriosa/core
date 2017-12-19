@@ -12,7 +12,7 @@ func TestGenerateDeviceUIDString(t *testing.T) {
 	t.Log("Testing Device UID collision")
 
 	for i := 0; i < TEST_UIDS; i++ {
-		if i % 1000 == 0 {
+		if i%1000 == 0 {
 			t.Log("Device UID at ", i)
 		}
 		newuid := GenerateDeviceUIDString()
