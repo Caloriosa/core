@@ -12,6 +12,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
+	"core/pkg/lib/rest"
 )
 
 const COLLECTION_TOKENS = "tokens"
@@ -36,9 +37,9 @@ func (u *AuthResource) Register(container *restful.Container) {
 	ws.Path("/auth")
 
 	// auth
-	ws.Route(ws.POST("").To(u.auth))
-	ws.Route(ws.PATCH("").To(u.refresh))
-	ws.Route(ws.DELETE("").To(u.logout))
+	ws.Route(ws.POST("").Filter(rest.AppAuthFilter).To(u.auth))
+	ws.Route(ws.PATCH("").Filter(rest.AppAuthFilter).To(u.refresh))
+	ws.Route(ws.DELETE("").Filter(rest.AppAuthFilter).To(u.logout))
 
 	container.Add(ws)
 

@@ -68,3 +68,5 @@ const (
 )
 
 const LENGTH_TOKEN = 32
+
+const HEADER_APPSIGN = "X-Application"

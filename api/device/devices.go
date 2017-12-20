@@ -3,7 +3,6 @@ package device
 import (
 	"core/pkg/db"
 	"core/pkg/lib/devices"
-	"core/pkg/lib/user"
 	"core/pkg/tools"
 	"core/pkg/validation"
 	"core/types"
@@ -11,6 +10,7 @@ import (
 	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
+	"core/pkg/lib/rest"
 )
 
 type DeviceResource struct {
@@ -27,27 +27,27 @@ func (u *DeviceResource) Register(container *restful.Container) {
 	ws.Path("/devices")
 	ws.Route(ws.GET("").To(u.listDevices))
 	ws.Route(ws.GET("{device-id}").To(u.getDevice))
-	ws.Route(ws.POST("").To(u.createDevice))
-	ws.Route(ws.PATCH("{device-id}").To(u.patchDevice))
-	ws.Route(ws.DELETE("{device-id}").To(u.deleteDevice))
+	ws.Route(ws.POST("").Filter(rest.UserAuthFilter).To(u.createDevice))
+	ws.Route(ws.PATCH("{device-id}").Filter(rest.UserAuthFilter).To(u.patchDevice))
+	ws.Route(ws.DELETE("{device-id}").Filter(rest.UserAuthFilter).To(u.deleteDevice))
 
-	ws.Route(ws.GET("my").To(u.listMyDevices))
+	ws.Route(ws.GET("my").Filter(rest.UserAuthFilter).To(u.listMyDevices))
 
 	ws.Route(ws.GET("{device-id}/sensors").To(u.listSensors))
-	ws.Route(ws.POST("{device-id}/sensors").To(u.createSensor))
+	ws.Route(ws.POST("{device-id}/sensors").Filter(rest.UserAuthFilter).To(u.createSensor))
 	ws.Route(ws.GET("{device-id}/sensors/{sensor-id}").To(u.getSensor))
-	ws.Route(ws.PATCH("{device-id}/sensors/{sensor-id}").To(u.patchSensor))
-	ws.Route(ws.DELETE("{device-id}/sensors/{sensor-id}").To(u.deleteSensor))
+	ws.Route(ws.PATCH("{device-id}/sensors/{sensor-id}").Filter(rest.UserAuthFilter).To(u.patchSensor))
+	ws.Route(ws.DELETE("{device-id}/sensors/{sensor-id}").Filter(rest.UserAuthFilter).To(u.deleteSensor))
 
 	ws.Route(ws.GET("{device-id}/measurements").To(u.listMeasurements))
 	ws.Route(ws.GET("{device-id}/measurements/{timestamp}").To(u.getMeasurement))
-	ws.Route(ws.DELETE("{device-id}/measurements/{timestamp}").To(u.deleteMeasurement))
+	ws.Route(ws.DELETE("{device-id}/measurements/{timestamp}").Filter(rest.UserAuthFilter).To(u.deleteMeasurement))
 
 	ws.Route(ws.GET("{device-id}/measurements/history").To(u.getMeasurementsHistory))
 
-	ws.Route(ws.GET("{device-id}/token").To(u.listTokens))
-	ws.Route(ws.POST("{device-id}/token").To(u.createToken))
-	ws.Route(ws.DELETE("{device-id}/token/{token-id}").To(u.deleteToken))
+	ws.Route(ws.GET("{device-id}/token").Filter(rest.UserAuthFilter).To(u.listTokens))
+	ws.Route(ws.POST("{device-id}/token").Filter(rest.UserAuthFilter).To(u.createToken))
+	ws.Route(ws.DELETE("{device-id}/token/{token-id}").Filter(rest.UserAuthFilter).To(u.deleteToken))
 
 	ws.Route(ws.GET("me").To(u.getSelf))
 
@@ -90,17 +90,13 @@ func (d *DeviceResource) getDevice(request *restful.Request, response *restful.R
 }
 
 func (d *DeviceResource) createDevice(request *restful.Request, response *restful.Response) {
-	user, err := userlib.GetUserFromRequest(request.Request)
-	if err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
-		return
-	}
+	user := request.Attribute("user").(*types.User)
 
 	device := types.Device{}
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&device)
 
-	if err = validation.ValidateNewDevice(&device); err != nil {
+	if err := validation.ValidateNewDevice(&device); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -108,7 +104,7 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 	device.User = &user.Id
 	device.FeaturedSensor = nil
 
-	if err = deviceslib.SaveDevice(&device); err != nil {
+	if err := deviceslib.SaveDevice(&device); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}

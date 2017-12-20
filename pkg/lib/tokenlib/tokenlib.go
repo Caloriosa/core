@@ -7,7 +7,17 @@ import (
 	"core/types"
 	"core/types/httptypes"
 	"gopkg.in/mgo.v2/bson"
+	"core/pkg/config"
 )
+
+func GetAppFromToken(token string) *string {
+	for _, app := range config.LoadedConfig.AppTokens {
+		if app.Token == token {
+			return &app.App
+		}
+	}
+	return nil
+}
 
 func GetTokensForUser(user *types.User, tokens []*types.Token) *errors.CalError {
 
