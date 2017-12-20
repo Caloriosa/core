@@ -2,6 +2,7 @@ package auth
 
 import (
 	"core/pkg/db"
+	"core/pkg/lib/rest"
 	"core/pkg/lib/user"
 	"core/pkg/tools"
 	"core/types"
@@ -12,7 +13,6 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"time"
-	"core/pkg/lib/rest"
 )
 
 const COLLECTION_TOKENS = "tokens"

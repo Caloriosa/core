@@ -1,18 +1,24 @@
 package tokenlib
 
 import (
+	"core/pkg/config"
 	"core/pkg/db"
 	"core/pkg/error"
 	"core/pkg/tools"
 	"core/types"
 	"core/types/httptypes"
 	"gopkg.in/mgo.v2/bson"
-	"core/pkg/config"
+	"strings"
 )
 
 func GetAppFromToken(token string) *string {
+	parts := strings.Split(token, "/")
+	if len(parts) != 2 {
+		return nil
+	}
+
 	for _, app := range config.LoadedConfig.AppTokens {
-		if app.Token == token {
+		if app.Token == parts[1] && app.App == parts[0] {
 			return &app.App
 		}
 	}
@@ -20,7 +26,6 @@ func GetAppFromToken(token string) *string {
 }
 
 func GetTokensForUser(user *types.User, tokens []*types.Token) *errors.CalError {
-
 	if err := db.MONGO.Get(tools.COLLECTION_TOKENS, tokens, bson.M{"type": types.TokenUser}, 0, 999); err != nil {
 		return &errors.CalError{Status: &httptypes.DATASOURCE_ERROR}
 	}

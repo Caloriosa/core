@@ -8,7 +8,14 @@ import (
 type Config struct {
 	MongoConnection string `yaml:"MongoConnection"`
 	MongoDatabase   string `yaml:"MongoDatabase"`
-	Email           struct {
+
+	Users struct {
+		CanRegister      bool `yaml:"CanRegister"`
+		Activation       bool `yaml:"Activation"`
+		ActivationExpiry int  `yaml:"ActivationExpiry"`
+	} `yaml:"Users"`
+
+	Email struct {
 		SmtpHost     string `yaml:"SmtpHost"`
 		SmtpPort     int    `yaml:"SmtpPort"`
 		SmtpUser     string `yaml:"SmtpUser"`

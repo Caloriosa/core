@@ -53,13 +53,14 @@ const (
 
 type User struct {
 	bongo.DocumentBase `bson:",inline"`
-	Login              string  `json:"login"`
-	Password           string  `json:"password,omitempty"`
-	Email              string  `json:"email,omitempty"`
-	Name               string  `json:"name"`
-	Activated          bool    `json:"activated"`
-	Role               string  `json:"role"`
-	ActivationKey      *string `json:"-"`
+	Login              string     `json:"login"`
+	Password           string     `json:"password,omitempty"`
+	Email              string     `json:"email,omitempty"`
+	Name               string     `json:"name"`
+	Activated          bool       `json:"activated"`
+	Role               string     `json:"role"`
+	ActivationKey      *string    `json:"-"`
+	ActivationExpiry   *time.Time `json:"-"`
 }
 
 const (

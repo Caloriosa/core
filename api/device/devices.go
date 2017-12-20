@@ -3,6 +3,7 @@ package device
 import (
 	"core/pkg/db"
 	"core/pkg/lib/devices"
+	"core/pkg/lib/rest"
 	"core/pkg/tools"
 	"core/pkg/validation"
 	"core/types"
@@ -10,7 +11,6 @@ import (
 	"encoding/json"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
-	"core/pkg/lib/rest"
 )
 
 type DeviceResource struct {

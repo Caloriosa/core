@@ -1,11 +1,11 @@
 package rest
 
 import (
-	"github.com/emicklei/go-restful"
-	"core/pkg/lib/user"
-	"core/types/httptypes"
-	"core/types"
 	"core/pkg/lib/tokenlib"
+	"core/pkg/lib/user"
+	"core/types"
+	"core/types/httptypes"
+	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 )
 
@@ -21,7 +21,7 @@ func UserAuthFilter(req *restful.Request, resp *restful.Response, chain *restful
 		return
 	}
 
-	req.SetAttribute(ATTRIBUTE_AUTHED_USER, &user)
+	req.SetAttribute(ATTRIBUTE_AUTHED_USER, user)
 
 	chain.ProcessFilter(req, resp)
 }
@@ -34,7 +34,7 @@ func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *rest
 		return
 	}
 
-	req.SetAttribute(ATTRIBUTE_URL_USER, &user)
+	req.SetAttribute(ATTRIBUTE_URL_USER, user)
 
 	chain.ProcessFilter(req, resp)
 }
@@ -51,7 +51,7 @@ func AppAuthFilter(req *restful.Request, resp *restful.Response, chain *restful.
 	appsign := req.HeaderParameter(types.HEADER_APPSIGN)
 	app := tokenlib.GetAppFromToken(appsign)
 	if appsign == "" || app == nil {
-		httptypes.SendResponse(resp, &httptypes.UNAUTHORIZED, nil)
+		httptypes.SendResponse(resp, &httptypes.INVALID_SIGNATURE, nil)
 		glog.Info("Somebody tried using wrong app token: ", appsign)
 		return
 	}

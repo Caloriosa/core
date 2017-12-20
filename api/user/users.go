@@ -4,6 +4,7 @@ import (
 	"core/pkg/activation"
 	"core/pkg/db"
 	"core/pkg/lib/devices"
+	"core/pkg/lib/rest"
 	"core/pkg/lib/tokenlib"
 	"core/pkg/lib/user"
 	"core/pkg/sanitization"
@@ -15,7 +16,6 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
-	"core/pkg/lib/rest"
 )
 
 const DEFAULT_LIMIT = 50
@@ -37,11 +37,6 @@ func Register(container *restful.Container) {
 
 	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
 		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true, Collation: &collation}); err != nil {
-		glog.Fatalf("Error ensuring index: ", err)
-	}
-
-	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
-		EnsureIndex(mgo.Index{Key: []string{"activationkey"}, Unique: true, Collation: &collation, Sparse: true}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 }

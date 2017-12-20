@@ -30,7 +30,8 @@ func Send(httpcode int, code, message string, content interface{}, r *restful.Re
 }
 
 func SendResponse(r *restful.Response, resp *HttpResponseStatus, content interface{}) error {
-	return r.WriteHeaderAndJson(resp.HttpCode, HttpResponsePack{Status: *resp, Content: content}, restful.MIME_JSON)
+	//return r.WriteHeaderAndJson(resp.HttpCode, HttpResponsePack{Status: *resp, Content: content}, restful.MIME_JSON)
+	return Send(resp.HttpCode, resp.Code, resp.Message, content, r)
 }
 
 func SendOK(content interface{}, r *restful.Response) error {
@@ -73,7 +74,7 @@ var AUTH_FAILED = HttpResponseStatus{HttpCode: http.StatusInternalServerError, C
 var INVALID_DATA = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_DATA", Message: "Invalid data"}
 var INVALID_CREDENTIALS = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "INVALID_CREDENTIALS", Message: "Invalid credentials (login, password)"}
 var INVALID_SENSOR = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_SENSOR", Message: "Sensor(s) is invalid or not exists"}
-var INVALID_TOKEN = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "INVALID_TOKEN", Message: "Your token is not valid"}
+var INVALID_TOKEN = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "INVALID_TOKEN", Message: "Your token is not valid"}
 var TOKEN_EXPIRED = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "TOKEN_EXPIRED", Message: "Token expired. Please re-login"}
 var USER_EXISTS = HttpResponseStatus{HttpCode: http.StatusConflict, Code: "USER_EXISTS", Message: "User %s exists"}
 var WEAK_PASSWORD = HttpResponseStatus{HttpCode: http.StatusBadRequest, Code: "WEAK_PASSWORD", Message: "Chosen password is too weak"}
@@ -89,3 +90,4 @@ var TIMED_OUT = HttpResponseStatus{HttpCode: http.StatusRequestTimeout, Code: "T
 var SERVICE_UNAVAILABLE = HttpResponseStatus{HttpCode: http.StatusServiceUnavailable, Code: "SERVICE_UNAVAILABLE", Message: "Service temporarily unavailable"}
 var BUSY = HttpResponseStatus{HttpCode: http.StatusServiceUnavailable, Code: "BUSY", Message: "Service is busy"}
 var UNKNOWN = HttpResponseStatus{HttpCode: http.StatusInternalServerError, Code: "UNKNOWN", Message: "Unknown error"}
+var INVALID_SIGNATURE = HttpResponseStatus{HttpCode: http.StatusUnauthorized, Code: "INVALID_SIGNATURE", Message: "Invalid application signature"}
