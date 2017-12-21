@@ -32,7 +32,9 @@ func CreateUser(newUser *types.User) *errors.CalError {
 	newUser.ActivationExpiry = &actexp
 	// re-enter password but as argon2
 	tmppwd := newUser.Password
-	newUser.Password = tools.EncodeUserPassword(tmppwd, tools.RandStringRunes(SALT_LENGTH))
+	salt := tools.RandStringRunes(SALT_LENGTH)
+	newUser.Password = tools.EncodeUserPassword(tmppwd, salt)
+	newUser.Salt = salt
 
 	if err := db.MONGO.Save(COLLECTION_USERS, newUser); err != nil {
 		if mgo.IsDup(err) {
