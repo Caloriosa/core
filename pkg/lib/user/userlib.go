@@ -16,10 +16,12 @@ import (
 )
 
 const COLLECTION_USERS = "users"
+const SALT_LENGTH = 32
 
 func CreateUser(newUser *types.User) *errors.CalError {
 
 	if err := validation.ValidateNewUser(newUser); err != nil {
+		glog.Info("Error validating a new user: ", err, " user: ", newUser)
 		return &errors.CalError{Status: &httptypes.DATA_INCOMPLETE}
 	}
 
@@ -28,6 +30,9 @@ func CreateUser(newUser *types.User) *errors.CalError {
 	actexp := time.Now().UTC().Add(time.Duration(config.LoadedConfig.Users.ActivationExpiry) * time.Hour)
 	newUser.ActivationKey = &actkey
 	newUser.ActivationExpiry = &actexp
+	// re-enter password but as argon2
+	tmppwd := newUser.Password
+	newUser.Password = tools.EncodeUserPassword(tmppwd, tools.RandStringRunes(SALT_LENGTH))
 
 	if err := db.MONGO.Save(COLLECTION_USERS, newUser); err != nil {
 		if mgo.IsDup(err) {

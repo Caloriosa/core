@@ -55,6 +55,7 @@ type User struct {
 	bongo.DocumentBase `bson:",inline"`
 	Login              string     `json:"login"`
 	Password           string     `json:"password,omitempty"`
+	Salt               string     `json:"-"`
 	Email              string     `json:"email,omitempty"`
 	Name               string     `json:"name"`
 	Activated          bool       `json:"activated"`

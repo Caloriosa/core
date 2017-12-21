@@ -9,3 +9,5 @@ import:
 - package: gopkg.in/gomail.v2
   version: ~2.0.0
 - package: gopkg.in/yaml.v2
+- package: github.com/magical/argon2
+- package: github.com/dchest/blake2b

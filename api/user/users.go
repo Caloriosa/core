@@ -47,7 +47,7 @@ func (u *UserResource) Register(container *restful.Container) {
 
 	// users
 	ws.Route(ws.GET("").To(u.listUsers))
-	ws.Route(ws.POST("").Filter(rest.UserAuthFilter).To(u.createUser))
+	ws.Route(ws.POST("").Filter(rest.AppAuthFilter).To(u.createUser))
 
 	// me
 	ws.Route(ws.GET("me").Filter(rest.UserAuthFilter).To(u.getSelf))
@@ -100,12 +100,12 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 }
 
 func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
-	authedUser := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	/*authedUser := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
 	if authedUser.Role != types.RoleAdmin {
 		httptypes.SendResponse(response, &httptypes.UNAUTHORIZED, nil)
 		return
-	}
+	}*/
 
 	newUser := types.User{}
 	err2 := request.ReadEntity(&newUser)

@@ -56,7 +56,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 		return
 	}
 
-	err := db.MONGO.Get(userlib.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login, "password": user.Password}, 0, 1)
+	err := db.MONGO.Get(userlib.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1)
 	if err != nil {
 		httptypes.SendGeneralError(nil, response)
 		glog.Warning("auth: ", err)
@@ -64,7 +64,15 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	}
 
 	if len(foundUser) == 0 {
-		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
+		httptypes.SendResponse(response, &httptypes.INVALID_USERNAME, nil)
+		return
+	}
+
+	// check password
+	inPassword := tools.EncodeUserPassword(user.Password, foundUser[0].Salt)
+	if inPassword != foundUser[0].Password {
+		httptypes.SendResponse(response, &httptypes.INVALID_PASSWORD, nil)
+		glog.Info("Bad password: ", user.Password)
 		return
 	}
 

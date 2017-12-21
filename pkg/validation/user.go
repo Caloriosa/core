@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"core/pkg/tools"
 	"core/types"
 	"errors"
 )
@@ -24,7 +25,7 @@ func MergeChangedUser(user *types.User, with *types.User) {
 	}*/
 
 	if with.Password != "" {
-		user.Password = with.Password
+		user.Password = tools.EncodeUserPassword(user.Salt, with.Password)
 	}
 
 	if with.Email != "" {

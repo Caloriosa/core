@@ -1,6 +1,8 @@
-hash: 5aaa4dba5e2e1f67bf6c87ba74ab8b8f98d68407d1f2945bb0406c5ac4c33a51
-updated: 2017-12-19T12:05:04.3378408+01:00
+hash: e08ecd838c9af1ea7f918bcd71995fe2cbf50236f94def7a1cce4a28f27b2349
+updated: 2017-12-21T16:11:07.6558344+01:00
 imports:
+- name: github.com/dchest/blake2b
+  version: 06006a921c7d13e3fdf63c401cb0e4529a26e6e4
 - name: github.com/emicklei/go-restful
   version: 5741799b275a3c4a5a9623a993576d7545cf7b5c
   subpackages:
@@ -9,6 +11,8 @@ imports:
   version: 58e3a1fbb5ea15dde8675b60becb2a9950e70164
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
+- name: github.com/magical/argon2
+  version: 190e3cf208e185668db6aa048e4985b7b7b4d890
 - name: github.com/maxwellhealth/go-dotaccess
   version: ae070a2d2a38fd7233e255ded21fb26fe36b4796
 - name: github.com/oleiade/reflections

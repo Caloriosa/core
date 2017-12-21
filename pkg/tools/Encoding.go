@@ -1,6 +1,13 @@
 package tools
 
+import (
+	"encoding/hex"
+	"github.com/golang/glog"
+	"github.com/magical/argon2"
+)
+
 const encodeStd = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+const PASSWORD_SALT_LENGTH = 32
 
 func EncodeUInt64(n uint64) string {
 	var (
@@ -19,4 +26,13 @@ func EncodeUInt64(n uint64) string {
 	s := string(b)
 
 	return s
+}
+
+func EncodeUserPassword(password, salt string) string {
+	s, err := argon2.Key([]byte(password), []byte(salt), 5, 2, 16, 32)
+	if err != nil {
+		glog.Fatal("Error creating a hash: ", err)
+	}
+
+	return hex.EncodeToString(s)
 }
