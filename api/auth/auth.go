@@ -3,7 +3,6 @@ package auth
 import (
 	"core/pkg/db"
 	"core/pkg/lib/rest"
-	"core/pkg/lib/user"
 	"core/pkg/tools"
 	"core/types"
 	"core/types/httptypes"
@@ -56,7 +55,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 		return
 	}
 
-	err := db.MONGO.Get(userlib.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1)
+	err := db.MONGO.Get(types.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1)
 	if err != nil {
 		httptypes.SendGeneralError(nil, response)
 		glog.Warning("auth: ", err)
@@ -96,7 +95,7 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 }
 
 func (u *AuthResource) refresh(request *restful.Request, response *restful.Response) {
-	token := tools.GetToken(request.Request)
+	token := types.GetTokenFromRequest(request.Request)
 	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
 	db.MONGO.Save(COLLECTION_TOKENS, token)
 
@@ -105,7 +104,7 @@ func (u *AuthResource) refresh(request *restful.Request, response *restful.Respo
 }
 
 func (u *AuthResource) logout(request *restful.Request, response *restful.Response) {
-	token := tools.GetToken(request.Request)
+	token := types.GetTokenFromRequest(request.Request)
 	if token == nil {
 		glog.Info("Invalid token")
 		httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)

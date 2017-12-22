@@ -2,10 +2,8 @@ package device
 
 import (
 	"core/pkg/db"
-	"core/pkg/lib/devices"
 	"core/pkg/lib/rest"
 	"core/pkg/tools"
-	"core/pkg/validation"
 	"core/types"
 	"core/types/httptypes"
 	"encoding/json"
@@ -26,28 +24,28 @@ func (u *DeviceResource) Register(container *restful.Container) {
 	ws := new(restful.WebService)
 	ws.Path("/devices")
 	ws.Route(ws.GET("").To(u.listDevices))
-	ws.Route(ws.GET("{device-id}").To(u.getDevice))
+	ws.Route(ws.GET("{device-id}").Filter(rest.ExtractDeviceFilter).To(u.getDevice))
 	ws.Route(ws.POST("").Filter(rest.UserAuthFilter).To(u.createDevice))
-	ws.Route(ws.PATCH("{device-id}").Filter(rest.UserAuthFilter).To(u.patchDevice))
-	ws.Route(ws.DELETE("{device-id}").Filter(rest.UserAuthFilter).To(u.deleteDevice))
+	ws.Route(ws.PATCH("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.patchDevice))
+	ws.Route(ws.DELETE("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteDevice))
 
 	ws.Route(ws.GET("my").Filter(rest.UserAuthFilter).To(u.listMyDevices))
 
-	ws.Route(ws.GET("{device-id}/sensors").To(u.listSensors))
-	ws.Route(ws.POST("{device-id}/sensors").Filter(rest.UserAuthFilter).To(u.createSensor))
-	ws.Route(ws.GET("{device-id}/sensors/{sensor-id}").To(u.getSensor))
-	ws.Route(ws.PATCH("{device-id}/sensors/{sensor-id}").Filter(rest.UserAuthFilter).To(u.patchSensor))
-	ws.Route(ws.DELETE("{device-id}/sensors/{sensor-id}").Filter(rest.UserAuthFilter).To(u.deleteSensor))
+	ws.Route(ws.GET("{device-id}/sensors").Filter(rest.ExtractDeviceFilter).To(u.listSensors))
+	ws.Route(ws.POST("{device-id}/sensors").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.createSensor))
+	ws.Route(ws.GET("{device-id}/sensors/{sensor-id}").Filter(rest.ExtractDeviceFilter).To(u.getSensor))
+	ws.Route(ws.PATCH("{device-id}/sensors/{sensor-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.patchSensor))
+	ws.Route(ws.DELETE("{device-id}/sensors/{sensor-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteSensor))
 
-	ws.Route(ws.GET("{device-id}/measurements").To(u.listMeasurements))
-	ws.Route(ws.GET("{device-id}/measurements/{timestamp}").To(u.getMeasurement))
-	ws.Route(ws.DELETE("{device-id}/measurements/{timestamp}").Filter(rest.UserAuthFilter).To(u.deleteMeasurement))
+	ws.Route(ws.GET("{device-id}/measurements").Filter(rest.ExtractDeviceFilter).To(u.listMeasurements))
+	ws.Route(ws.GET("{device-id}/measurements/{timestamp}").Filter(rest.ExtractDeviceFilter).To(u.getMeasurement))
+	ws.Route(ws.DELETE("{device-id}/measurements/{timestamp}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteMeasurement))
 
-	ws.Route(ws.GET("{device-id}/measurements/history").To(u.getMeasurementsHistory))
+	ws.Route(ws.GET("{device-id}/measurements/history").Filter(rest.ExtractDeviceFilter).To(u.getMeasurementsHistory))
 
-	ws.Route(ws.GET("{device-id}/token").Filter(rest.UserAuthFilter).To(u.listTokens))
-	ws.Route(ws.POST("{device-id}/token").Filter(rest.UserAuthFilter).To(u.createToken))
-	ws.Route(ws.DELETE("{device-id}/token/{token-id}").Filter(rest.UserAuthFilter).To(u.deleteToken))
+	ws.Route(ws.GET("{device-id}/token").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.listTokens))
+	ws.Route(ws.POST("{device-id}/token").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.createToken))
+	ws.Route(ws.DELETE("{device-id}/token/{token-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteToken))
 
 	ws.Route(ws.GET("me").To(u.getSelf))
 
@@ -79,14 +77,14 @@ func (d *DeviceResource) listDevices(request *restful.Request, response *restful
 	filters, err := tools.GetFilters(request.Request.URL.Query(), &types.User{})
 	glog.Infof("Filters: ", filters)
 
-	db.MONGO.Get(deviceslib.COLLECTION_DEVICES, &devices, filters, page, limit)
+	db.MONGO.Get(types.COLLECTION_DEVICES, &devices, filters, page, limit)
 
 	httptypes.SendOK(types.Device{}, response)
 	glog.Info("Returned devices list: ", devices)
 }
 
 func (d *DeviceResource) getDevice(request *restful.Request, response *restful.Response) {
-
+	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, request.Attribute(rest.ATTRIBUTE_URL_DEVICE))
 }
 
 func (d *DeviceResource) createDevice(request *restful.Request, response *restful.Response) {
@@ -96,7 +94,7 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&device)
 
-	if err := validation.ValidateNewDevice(&device); err != nil {
+	if err := device.ValidateNew(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -104,7 +102,7 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 	device.User = &user.Id
 	device.FeaturedSensor = nil
 
-	if err := deviceslib.SaveDevice(&device); err != nil {
+	if err := device.Save(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}

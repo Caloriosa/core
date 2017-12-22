@@ -24,9 +24,6 @@ func SendValidationEmail(user *types.User) error {
 		glog.Error("Error executing a new validation email: ", err)
 	}
 
-	//err = InsecureSendMail("10.0.0.90:925", "caloriosa@mail.foxiehost.lan", "caloriosa@victorianfox.com", buffer.Bytes(),
-	//	smtp.PlainAuth("", "caloriosa", "caloriosa", "10.0.0.90"))
-
 	dialer := gomail.NewDialer(config.LoadedConfig.Email.SmtpHost, config.LoadedConfig.Email.SmtpPort, config.LoadedConfig.Email.SmtpUser, config.LoadedConfig.Email.SmtpPassword)
 	dialer.TLSConfig = &tls.Config{InsecureSkipVerify: true, ServerName: config.LoadedConfig.Email.SmtpHost}
 	email := gomail.NewMessage()

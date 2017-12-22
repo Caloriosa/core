@@ -2,7 +2,6 @@ package rest
 
 import (
 	"core/pkg/lib/tokenlib"
-	"core/pkg/lib/user"
 	"core/types"
 	"core/types/httptypes"
 	"github.com/emicklei/go-restful"
@@ -10,11 +9,13 @@ import (
 )
 
 const ATTRIBUTE_AUTHED_USER = "user"
+const ATTROBUTE_AUTHED_DEVICE = "device"
+const ATTRIBUTE_URL_DEVICE = "url-device"
 const ATTRIBUTE_URL_USER = "url-user"
 const ATTRIBUTE_AUTHED_APP = "app"
 
 func UserAuthFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-	user, err := userlib.GetUserFromRequest(req.Request)
+	user, err := types.GetUserFromRequest(req.Request)
 	if err != nil {
 		httptypes.SendResponse(resp, err.Status, nil)
 		glog.Info("Somebody tried accessing with unknown user token")
@@ -26,10 +27,23 @@ func UserAuthFilter(req *restful.Request, resp *restful.Response, chain *restful
 	chain.ProcessFilter(req, resp)
 }
 
+func DeviceAuthFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+	device, err := types.GetDeviceFromRequest(req.Request)
+	if err != nil {
+		httptypes.SendResponse(resp, err.Status, nil)
+		glog.Info("Somebody tried accessing with unknown device token")
+		return
+	}
+
+	req.SetAttribute(ATTROBUTE_AUTHED_DEVICE, device)
+
+	chain.ProcessFilter(req, resp)
+}
+
 func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
 	id := req.PathParameter("user-id")
 	user := types.User{}
-	if err := userlib.FindUserById(id, &user); err != nil {
+	if err := types.GetUserById(id, &user); err != nil {
 		httptypes.SendResponse(resp, err.Status, nil)
 		return
 	}
@@ -40,6 +54,14 @@ func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *rest
 }
 
 func ExtractDeviceFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+	id := req.PathParameter("device-id")
+	device := types.Device{}
+	if err := types.GetDeviceById(id, &device); err != nil {
+		httptypes.SendResponse(resp, err.Status, nil)
+		return
+	}
+
+	req.SetAttribute(ATTRIBUTE_URL_DEVICE, device)
 	chain.ProcessFilter(req, resp)
 }
 

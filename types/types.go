@@ -8,6 +8,7 @@ import (
 
 type Device struct {
 	bongo.DocumentBase `bson:",inline"`
+	Name               string         `json:"name"`
 	Title              string         `json:"title"`
 	Description        string         `json:"description"`
 	Location           string         `json:"location"`
@@ -35,6 +36,7 @@ type Measurement struct {
 	bongo.DocumentBase `bson:",inline"`
 	Sensor             *Sensor   `json:"sensor"`
 	MeasuredAt         time.Time `json:"measuredat"`
+	Value              uint64    `json:"value"`
 }
 
 type Token struct {

@@ -1,17 +1,13 @@
 package tools
 
 import (
-	"core/pkg/db"
-	"core/types"
 	"fmt"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
-	"net/http"
 	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const DEFAULT_LIMIT = 50
@@ -78,33 +74,4 @@ func GetFilters(values url.Values, mytype interface{}) (map[string]interface{}, 
 	}
 
 	return filtersObj, nil
-}
-
-func GetToken(req *http.Request) *types.Token {
-	mytoken := []types.Token{}
-	glog.Info("Headers: ", req.Header)
-	if tokens, ok := req.Header["Authorization"]; ok {
-		glog.Info("Found tokens: ", tokens)
-		if len(tokens) > 0 {
-			glog.Info("X token: ", tokens[0], "token: ", mytoken)
-			xtoken := strings.TrimPrefix(tokens[0], "Bearer ")
-			if err := db.MONGO.Get(COLLECTION_TOKENS, &mytoken, bson.M{"token": xtoken}, 0, 1); err == nil {
-				glog.Info("Extracted token: ", mytoken)
-				if len(mytoken) == 0 {
-					return nil
-				}
-
-				glog.Info("ExpireAt: ", mytoken[0].ExpireAt.UTC(), " now: ", time.Now().UTC(), "is ok? ", mytoken[0].ExpireAt.Before(time.Now().UTC()))
-
-				if mytoken[0].ExpireAt.UTC().After(time.Now().UTC()) {
-					return &mytoken[0]
-				} else {
-					db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(&mytoken[0])
-					glog.Info("Deleting expired token.")
-				}
-			}
-		}
-	}
-
-	return nil
 }

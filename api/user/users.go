@@ -3,13 +3,9 @@ package user
 import (
 	"core/pkg/activation"
 	"core/pkg/db"
-	"core/pkg/lib/devices"
 	"core/pkg/lib/rest"
-	"core/pkg/lib/tokenlib"
-	"core/pkg/lib/user"
 	"core/pkg/sanitization"
 	"core/pkg/tools"
-	"core/pkg/validation"
 	"core/types"
 	"core/types/httptypes"
 	"encoding/json"
@@ -30,12 +26,12 @@ func Register(container *restful.Container) {
 
 	collation := mgo.Collation{Locale: "cs", Strength: 2}
 
-	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
+	if err := db.MONGO.Connection.Collection(types.COLLECTION_USERS).Collection().
 		EnsureIndex(mgo.Index{Key: []string{"login"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
 
-	if err := db.MONGO.Connection.Collection(userlib.COLLECTION_USERS).Collection().
+	if err := db.MONGO.Connection.Collection(types.COLLECTION_USERS).Collection().
 		EnsureIndex(mgo.Index{Key: []string{"email"}, Unique: true, Collation: &collation}); err != nil {
 		glog.Fatalf("Error ensuring index: ", err)
 	}
@@ -89,7 +85,7 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 	filters, err := tools.GetFilters(request.Request.URL.Query(), &types.User{})
 	glog.Infof("Filters: ", filters)
 
-	db.MONGO.Get(userlib.COLLECTION_USERS, &users, filters, page, limit)
+	db.MONGO.Get(types.COLLECTION_USERS, &users, filters, page, limit)
 
 	for index := range users {
 		sanitization.UserSanitization(&users[index], true) // todo not a strict sanitization
@@ -115,7 +111,7 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 		return
 	}
 
-	if err := userlib.CreateUser(&newUser); err != nil {
+	if err := types.CreateUser(&newUser); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -139,9 +135,9 @@ func (u *UserResource) patchSelf(request *restful.Request, response *restful.Res
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&sentUser) // TODO error handling
 
-	validation.MergeChangedUser(user, &sentUser)
+	user.MergeIn(&sentUser)
 
-	if err := userlib.SaveUser(user); err != nil {
+	if err := user.Save(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -153,7 +149,7 @@ func (u *UserResource) patchSelf(request *restful.Request, response *restful.Res
 func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Response) {
 	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
-	if err := userlib.DeleteUser(user); err != nil {
+	if err := user.Delete(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -162,7 +158,7 @@ func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Re
 func (u *UserResource) getUser(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter(rest.ATTRIBUTE_URL_USER)
 	user := types.User{}
-	if err := userlib.FindUserById(id, &user); err != nil {
+	if err := types.GetUserById(id, &user); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -179,9 +175,9 @@ func (u *UserResource) patchUser(request *restful.Request, response *restful.Res
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&sentUser) // TODO error handling
 
-	validation.MergeChangedUser(user, &sentUser)
+	user.MergeIn(&sentUser)
 
-	if err := userlib.SaveUser(user); err != nil {
+	if err := user.Save(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -194,7 +190,7 @@ func (u *UserResource) getTokens(request *restful.Request, response *restful.Res
 	tokens := []*types.Token{}
 	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
-	if err := tokenlib.GetTokensForUser(user, tokens); err != nil {
+	if err := types.GetTokensForUser(user, tokens); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -207,7 +203,7 @@ func (u *UserResource) getToken(request *restful.Request, response *restful.Resp
 	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
 
 	token := types.Token{}
-	if err := tokenlib.GetToken(tokenid, &token); err != nil {
+	if err := types.GetToken(tokenid, &token); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -225,7 +221,7 @@ func (u *UserResource) deleteToken(request *restful.Request, response *restful.R
 	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
 
 	token := types.Token{}
-	if err := tokenlib.GetToken(tokenid, &token); err != nil {
+	if err := types.GetToken(tokenid, &token); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -235,7 +231,7 @@ func (u *UserResource) deleteToken(request *restful.Request, response *restful.R
 		return
 	}
 
-	if err := tokenlib.DeleteToken(&token); err != nil {
+	if err := token.Delete(); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -248,7 +244,7 @@ func (u *UserResource) getDevices(request *restful.Request, response *restful.Re
 
 	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
 
-	if err := deviceslib.GetUsersDevices(user, &devices); err != nil {
+	if err := types.GetUsersDevices(user, &devices); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
@@ -265,13 +261,13 @@ func (u *UserResource) registerUser(request *restful.Request, response *restful.
 		return
 	}
 
-	if err := userlib.CreateUser(&newUser); err != nil {
+	if err := types.CreateUser(&newUser); err != nil {
 		httptypes.SendResponse(response, err.Status, nil)
 		return
 	}
 
 	newUser.Activated = false
-	userlib.SaveUser(&newUser)
+	newUser.Save()
 
 	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, newUser)
 
@@ -285,7 +281,7 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 	decoder.Decode(&foo) // TODO error handling
 
 	if val, ok := foo["activation_token"]; ok && val != "" {
-		if user, err := userlib.ActivateUserByActToken(val); err == nil {
+		if user, err := types.ActivateUserByToken(val); err == nil {
 			sanitization.UserSanitization(user, true)
 			httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
 			return
