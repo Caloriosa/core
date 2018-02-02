@@ -43,7 +43,7 @@ func (u *UserResource) Register(container *restful.Container) {
 
 	// users
 	ws.Route(ws.GET("").To(u.listUsers))
-	ws.Route(ws.POST("").Filter(rest.AppAuthFilter).To(u.createUser))
+	ws.Route(ws.POST("").Filter(rest.UserAuthFilter).To(u.createUser))
 
 	// me
 	ws.Route(ws.GET("me").Filter(rest.UserAuthFilter).To(u.getSelf))
@@ -79,7 +79,7 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 
 	page, limit, err = tools.GetPagination(request.Request.URL.Query())
 	if err != nil {
-		httptypes.SendGeneralError(nil, response)
+		httptypes.SendGeneralError(response)
 	}
 
 	filters, err := tools.GetFilters(request.Request.URL.Query(), &types.User{})
@@ -91,32 +91,32 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 		sanitization.UserSanitization(&users[index], true) // todo not a strict sanitization
 	}
 
-	httptypes.SendOK(users, response)
+	httptypes.SendOK(response, &users)
 	glog.Info("Returned user list: ", users)
 }
 
 func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
-	/*authedUser := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	authedUser := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
 	if authedUser.Role != types.RoleAdmin {
-		httptypes.SendResponse(response, &httptypes.UNAUTHORIZED, nil)
+		httptypes.SendError(response, &httptypes.UNAUTHORIZED)
 		return
-	}*/
+	}
 
 	newUser := types.User{}
 	err2 := request.ReadEntity(&newUser)
 	if err2 != nil {
-		httptypes.SendInvalidData(httptypes.EMPTY_CONTENT, response)
+		httptypes.SendError(response, nil)
 		glog.Warning("Error parsing a new user: ", err2)
 		return
 	}
 
 	if err := types.CreateUser(&newUser); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, newUser)
+	httptypes.SendOK(response, newUser)
 }
 
 func (u *UserResource) getSelf(request *restful.Request, response *restful.Response) {
@@ -124,7 +124,7 @@ func (u *UserResource) getSelf(request *restful.Request, response *restful.Respo
 
 	sanitization.UserSanitization(user, false)
 
-	httptypes.SendOK(user, response)
+	httptypes.SendOK(response, &user)
 }
 
 func (u *UserResource) patchSelf(request *restful.Request, response *restful.Response) {
@@ -138,34 +138,29 @@ func (u *UserResource) patchSelf(request *restful.Request, response *restful.Res
 	user.MergeIn(&sentUser)
 
 	if err := user.Save(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
 	sanitization.UserSanitization(user, true) // todo not a strict sanitization
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
+	httptypes.SendOK(response, user)
 }
 
 func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Response) {
 	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
 	if err := user.Delete(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 }
 
 func (u *UserResource) getUser(request *restful.Request, response *restful.Response) {
-	id := request.PathParameter(rest.ATTRIBUTE_URL_USER)
-	user := types.User{}
-	if err := types.GetUserById(id, &user); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
-		return
-	}
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
 
-	sanitization.UserSanitization(&user, true) // todo not a strict sanitization
+	sanitization.UserSanitization(user, true) // todo not a strict sanitization
 
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
+	httptypes.SendOK(response, user)
 }
 
 func (u *UserResource) patchUser(request *restful.Request, response *restful.Response) {
@@ -178,12 +173,12 @@ func (u *UserResource) patchUser(request *restful.Request, response *restful.Res
 	user.MergeIn(&sentUser)
 
 	if err := user.Save(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
 	sanitization.UserSanitization(user, true) // todo not a strict sanitization
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
+	httptypes.SendOK(response, user)
 }
 
 func (u *UserResource) getTokens(request *restful.Request, response *restful.Response) {
@@ -191,11 +186,11 @@ func (u *UserResource) getTokens(request *restful.Request, response *restful.Res
 	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
 
 	if err := types.GetTokensForUser(user, tokens); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(tokens, response)
+	httptypes.SendOK(response, &tokens)
 }
 
 func (u *UserResource) getToken(request *restful.Request, response *restful.Response) {
@@ -204,16 +199,16 @@ func (u *UserResource) getToken(request *restful.Request, response *restful.Resp
 
 	token := types.Token{}
 	if err := types.GetToken(tokenid, &token); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
 	if token.User.Hex() != user.Id.Hex() {
-		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
+		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		return
 	}
 
-	httptypes.SendOK(token, response)
+	httptypes.SendOK(response, token)
 }
 
 func (u *UserResource) deleteToken(request *restful.Request, response *restful.Response) {
@@ -222,21 +217,21 @@ func (u *UserResource) deleteToken(request *restful.Request, response *restful.R
 
 	token := types.Token{}
 	if err := types.GetToken(tokenid, &token); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
 	if token.User.Hex() != user.Id.Hex() {
-		httptypes.SendResponse(response, &httptypes.INVALID_CREDENTIALS, nil)
+		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		return
 	}
 
 	if err := token.Delete(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(token, response)
+	httptypes.SendOK(response, &token)
 }
 
 func (u *UserResource) getDevices(request *restful.Request, response *restful.Response) {
@@ -245,31 +240,31 @@ func (u *UserResource) getDevices(request *restful.Request, response *restful.Re
 	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
 
 	if err := types.GetUsersDevices(user, &devices); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(devices, response)
+	httptypes.SendOK(response, devices)
 }
 
 func (u *UserResource) registerUser(request *restful.Request, response *restful.Response) {
 	newUser := types.User{}
 	err := request.ReadEntity(&newUser)
 	if err != nil {
-		httptypes.SendInvalidData(httptypes.EMPTY_CONTENT, response)
+		httptypes.SendError(response, nil)
 		glog.Warning("Error parsing a new user: ", err)
 		return
 	}
 
 	if err := types.CreateUser(&newUser); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
 	newUser.Activated = false
 	newUser.Save()
 
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, newUser)
+	httptypes.SendOK(response, &newUser)
 
 	go activation.SendValidationEmail(&newUser)
 }
@@ -283,12 +278,12 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 	if val, ok := foo["activation_token"]; ok && val != "" {
 		if user, err := types.ActivateUserByToken(val); err == nil {
 			sanitization.UserSanitization(user, true)
-			httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, user)
+			httptypes.SendOK(response, &user)
 			return
 		}
 	}
 
-	httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)
+	httptypes.SendError(response, &httptypes.INVALID_TOKEN)
 }
 
 func (u *UserResource) resetPassword(request *restful.Request, response *restful.Response) {

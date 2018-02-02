@@ -39,6 +39,14 @@ func main() {
 	restful.DefaultResponseContentType(restful.MIME_JSON)
 	restful.DefaultContainer.EnableContentEncoding(true)
 	restful.DefaultContainer.Router(restful.CurlyRouter{})
+	restful.Filter(restful.OPTIONSFilter())
+	cors := restful.CrossOriginResourceSharing{
+		ExposeHeaders:  []string{"X-My-Header"},
+		AllowedHeaders: []string{"Content-Type", "Accept"},
+		AllowedMethods: []string{"GET", "POST"},
+		CookiesAllowed: false,
+		Container:      restful.DefaultContainer}
+	restful.DefaultContainer.Filter(cors.Filter)
 
 	userapi.Register(restful.DefaultContainer)
 	deviceapi.Register(restful.DefaultContainer)

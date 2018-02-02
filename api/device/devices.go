@@ -70,7 +70,7 @@ func (d *DeviceResource) listDevices(request *restful.Request, response *restful
 
 	page, limit, err = tools.GetPagination(request.Request.URL.Query())
 	if err != nil {
-		httptypes.SendGeneralError(nil, response)
+		httptypes.SendGeneralError(response)
 		return
 	}
 
@@ -79,12 +79,12 @@ func (d *DeviceResource) listDevices(request *restful.Request, response *restful
 
 	db.MONGO.Get(types.COLLECTION_DEVICES, &devices, filters, page, limit)
 
-	httptypes.SendOK(types.Device{}, response)
+	httptypes.SendOK(response, &devices)
 	glog.Info("Returned devices list: ", devices)
 }
 
 func (d *DeviceResource) getDevice(request *restful.Request, response *restful.Response) {
-	httptypes.SendResponse(response, &httptypes.HTTP_RESPONSE_OK, request.Attribute(rest.ATTRIBUTE_URL_DEVICE))
+	httptypes.SendOK(response, request.Attribute(rest.ATTRIBUTE_URL_DEVICE))
 }
 
 func (d *DeviceResource) createDevice(request *restful.Request, response *restful.Response) {
@@ -95,7 +95,7 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 	decoder.Decode(&device)
 
 	if err := device.ValidateNew(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
@@ -103,11 +103,11 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 	device.FeaturedSensor = nil
 
 	if err := device.Save(); err != nil {
-		httptypes.SendResponse(response, err.Status, nil)
+		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(&device, response)
+	httptypes.SendOK(response, &device)
 	glog.Info("Created a new device: ", device)
 
 }

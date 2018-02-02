@@ -68,6 +68,14 @@ func (u *User) MergeIn(with *User) {
 	}
 }
 
+func (u *User) Activate() *calerror.CalError {
+	u.Activated = true
+	u.ActivationKey = nil
+	u.ActivationExpiry = nil
+
+	return u.Save()
+}
+
 func GetUserById(id string, user *User) *calerror.CalError {
 	err := db.MONGO.FindById(COLLECTION_USERS, &user, id)
 	if err != nil {
@@ -75,6 +83,14 @@ func GetUserById(id string, user *User) *calerror.CalError {
 	}
 
 	return nil
+}
+
+func GetUserByLogin(login string) (*calerror.CalError, *User) {
+	users := []User{}
+	if err := db.MONGO.Get(COLLECTION_USERS, &users, bson.M{"login": login}, 0, 1); err != nil || len(users) == 0{
+		return &calerror.CalError{Status: &httptypes.NOT_FOUND}, nil
+	}
+	return nil, &users[0]
 }
 
 func ActivateUserByToken(token string) (*User, *calerror.CalError) {
@@ -100,16 +116,7 @@ func ActivateUserByToken(token string) (*User, *calerror.CalError) {
 		return nil, &calerror.CalError{Status: &httptypes.TOKEN_EXPIRED}
 	}
 
-	user.Activated = true
-	user.ActivationKey = nil
-	user.ActivationExpiry = nil
-	glog.Info("Activated user: ", &user)
-	if err := user.Save(); err != nil {
-		glog.Info("Error saving activated user: ", err)
-		return nil, &calerror.CalError{Status: &httptypes.DATASOURCE_ERROR}
-	}
-
-	return &user, nil
+	return &user, user.Activate()
 }
 
 func GetUserFromRequest(r *http.Request) (*User, *calerror.CalError) {

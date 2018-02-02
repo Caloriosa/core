@@ -12,6 +12,10 @@ import (
 const COLLECTION_DEVICES = "devices"
 
 func (d *Device) Save() *errors.CalError {
+	if d.Name == "" {
+		d.Name = deviceslib.GenerateDeviceUIDString()
+	}
+
 	if err := db.MONGO.Save(COLLECTION_DEVICES, d); err != nil {
 		return &errors.CalError{Status: &httptypes.DATASOURCE_ERROR}
 	}
@@ -20,7 +24,6 @@ func (d *Device) Save() *errors.CalError {
 }
 
 func (d *Device) ValidateNew() *errors.CalError {
-	d.Name = deviceslib.GenerateDeviceUIDString()
 	return nil
 }
 

@@ -57,20 +57,20 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 
 	err := db.MONGO.Get(types.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1)
 	if err != nil {
-		httptypes.SendGeneralError(nil, response)
+		httptypes.SendGeneralError(response)
 		glog.Warning("auth: ", err)
 		return
 	}
 
 	if len(foundUser) == 0 {
-		httptypes.SendResponse(response, &httptypes.INVALID_USERNAME, nil)
+		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		return
 	}
 
 	// check password
 	inPassword := tools.EncodeUserPassword(user.Password, foundUser[0].Salt)
 	if inPassword != foundUser[0].Password {
-		httptypes.SendResponse(response, &httptypes.INVALID_PASSWORD, nil)
+		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		glog.Info("Bad password: ", user.Password)
 		return
 	}
@@ -85,13 +85,13 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 
 	err = db.MONGO.Save(COLLECTION_TOKENS, &token)
 	if err != nil {
-		httptypes.SendGeneralError(nil, response)
+		httptypes.SendGeneralError(response)
 		glog.Warning("auth2: ", err)
 		return
 	}
 
 	glog.Info("Creating token: ", token)
-	httptypes.SendOK(token, response)
+	httptypes.SendOK(response, &token)
 }
 
 func (u *AuthResource) refresh(request *restful.Request, response *restful.Response) {
@@ -99,7 +99,7 @@ func (u *AuthResource) refresh(request *restful.Request, response *restful.Respo
 	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
 	db.MONGO.Save(COLLECTION_TOKENS, token)
 
-	httptypes.SendOK(token, response)
+	httptypes.SendOK(response, &token)
 
 }
 
@@ -107,10 +107,10 @@ func (u *AuthResource) logout(request *restful.Request, response *restful.Respon
 	token := types.GetTokenFromRequest(request.Request)
 	if token == nil {
 		glog.Info("Invalid token")
-		httptypes.SendResponse(response, &httptypes.INVALID_TOKEN, nil)
+		httptypes.SendError(response, &httptypes.INVALID_TOKEN)
 		return
 	}
 	db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(token)
 
-	httptypes.SendOK(nil, response)
+	httptypes.SendOK(response, nil)
 }

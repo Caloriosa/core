@@ -37,6 +37,13 @@ func GetPagination(values url.Values) (int, int, error) {
 	return page, limit, nil
 }
 
+/*
+func GetJsonFilter(filter string, mytype interface{}) (map[string]interface{}, error) {
+	decoder := json.NewDecoder(filter)
+	// TODO
+
+}
+*/
 func GetFilters(values url.Values, mytype interface{}) (map[string]interface{}, error) {
 	filtersObj := bson.M{}
 	var err error
