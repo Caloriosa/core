@@ -47,16 +47,18 @@ func (u *AuthResource) Register(container *restful.Container) {
 func (u *AuthResource) auth(request *restful.Request, response *restful.Response) {
 	user := types.User{}
 	decoder := json.NewDecoder(request.Request.Body)
-	decoder.Decode(&user)
-	foundUser := []types.User{}
+	if err := decoder.Decode(&user); err != nil {
+		glog.Info("Error parsing json: ", err.Error())
+		return
+	}
+	foundUser := []types.UserDB{}
 
 	if user.Password == "" || user.Login == "" {
 		httptypes.SendBadAuth(response)
 		return
 	}
 
-	err := db.MONGO.Get(types.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1)
-	if err != nil {
+	if err := db.MONGO.Get(types.COLLECTION_USERS, &foundUser, bson.M{"login": user.Login}, 0, 1); err != nil {
 		httptypes.SendGeneralError(response)
 		glog.Warning("auth: ", err)
 		return
@@ -68,8 +70,8 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	}
 
 	// check password
-	inPassword := tools.EncodeUserPassword(user.Password, foundUser[0].Salt)
-	if inPassword != foundUser[0].Password {
+	inPassword := tools.EncodeUserPassword(user.Password, foundUser[0].User.Salt)
+	if inPassword != foundUser[0].User.Password {
 		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		glog.Info("Bad password: ", user.Password)
 		return
@@ -80,24 +82,25 @@ func (u *AuthResource) auth(request *restful.Request, response *restful.Response
 	token.Token = tools.RandStringRunes(types.LENGTH_TOKEN)
 	token.Type = types.TokenUser
 	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
-	token.User = &foundUser[0].DocumentBase.Id
+	token.User = &foundUser[0].Id
 	token.Device = nil
 
-	err = db.MONGO.Save(COLLECTION_TOKENS, &token)
+	tokenToSend, err := types.CreateNewToken(&token)
+
 	if err != nil {
 		httptypes.SendGeneralError(response)
-		glog.Warning("auth2: ", err)
+		glog.Warning("auth2: ", err.Status)
 		return
 	}
 
-	glog.Info("Creating token: ", token)
-	httptypes.SendOK(response, &token)
+	glog.Info("Creating token: ", tokenToSend)
+	httptypes.SendOK(response, tokenToSend.PrepareToSend())
 }
 
 func (u *AuthResource) refresh(request *restful.Request, response *restful.Response) {
 	token := types.GetTokenFromRequest(request.Request)
-	token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
-	db.MONGO.Save(COLLECTION_TOKENS, token)
+	token.Token.ExpireAt = time.Now().UTC().Add(48 * time.Hour)
+	token.Save()
 
 	httptypes.SendOK(response, &token)
 
@@ -110,7 +113,7 @@ func (u *AuthResource) logout(request *restful.Request, response *restful.Respon
 		httptypes.SendError(response, &httptypes.INVALID_TOKEN)
 		return
 	}
-	db.MONGO.Connection.Collection(COLLECTION_TOKENS).DeleteDocument(token)
+	token.Delete()
 
 	httptypes.SendOK(response, nil)
 }

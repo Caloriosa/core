@@ -4,7 +4,6 @@ import (
 	"core/pkg/activation"
 	"core/pkg/db"
 	"core/pkg/lib/rest"
-	"core/pkg/sanitization"
 	"core/pkg/tools"
 	"core/types"
 	"core/types/httptypes"
@@ -72,7 +71,7 @@ func (u *UserResource) Register(container *restful.Container) {
 }
 
 func (u *UserResource) listUsers(request *restful.Request, response *restful.Response) {
-	var users []types.User
+	var users []types.UserDB
 
 	var page, limit int
 	var err error
@@ -87,12 +86,14 @@ func (u *UserResource) listUsers(request *restful.Request, response *restful.Res
 
 	db.MONGO.Get(types.COLLECTION_USERS, &users, filters, page, limit)
 
+	var usersToSend = make([]types.User, len(users))
+
 	for index := range users {
-		sanitization.UserSanitization(&users[index], true) // todo not a strict sanitization
+		usersToSend[index] = *users[index].PrepareToSend(true)
 	}
 
-	httptypes.SendOK(response, &users)
-	glog.Info("Returned user list: ", users)
+	httptypes.SendOK(response, &usersToSend)
+	glog.Info("Returned user list: ", &usersToSend)
 }
 
 func (u *UserResource) createUser(request *restful.Request, response *restful.Response) {
@@ -111,117 +112,120 @@ func (u *UserResource) createUser(request *restful.Request, response *restful.Re
 		return
 	}
 
-	if err := types.CreateUser(&newUser); err != nil {
+	createdUser, err := types.CreateUser(&newUser)
+
+	if err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(response, newUser)
+	httptypes.SendOK(response, createdUser.PrepareToSend(false))
 }
 
 func (u *UserResource) getSelf(request *restful.Request, response *restful.Response) {
-	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.UserDB)
 
-	sanitization.UserSanitization(user, false)
-
-	httptypes.SendOK(response, &user)
+	httptypes.SendOK(response, user.PrepareToSend(false))
 }
 
 func (u *UserResource) patchSelf(request *restful.Request, response *restful.Response) {
-	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.UserDB)
 
 	sentUser := types.User{}
 
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&sentUser) // TODO error handling
 
-	user.MergeIn(&sentUser)
+	user.User.MergeIn(&sentUser)
 
 	if err := user.Save(); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	sanitization.UserSanitization(user, true) // todo not a strict sanitization
-	httptypes.SendOK(response, user)
+	httptypes.SendOK(response, user.PrepareToSend(false))
 }
 
 func (u *UserResource) deleteSelf(request *restful.Request, response *restful.Response) {
-	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.UserDB)
 
 	if err := user.Delete(); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
+
+	httptypes.SendOK(response, nil)
 }
 
 func (u *UserResource) getUser(request *restful.Request, response *restful.Response) {
-	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.UserDB)
 
-	sanitization.UserSanitization(user, true) // todo not a strict sanitization
-
-	httptypes.SendOK(response, user)
+	httptypes.SendOK(response, user.PrepareToSend(true))
 }
 
 func (u *UserResource) patchUser(request *restful.Request, response *restful.Response) {
-	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.UserDB)
 	sentUser := types.User{}
 
 	decoder := json.NewDecoder(request.Request.Body)
 	decoder.Decode(&sentUser) // TODO error handling
 
-	user.MergeIn(&sentUser)
+	user.User.MergeIn(&sentUser)
 
 	if err := user.Save(); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	sanitization.UserSanitization(user, true) // todo not a strict sanitization
-	httptypes.SendOK(response, user)
+	httptypes.SendOK(response, user.PrepareToSend(true))
 }
 
 func (u *UserResource) getTokens(request *restful.Request, response *restful.Response) {
-	tokens := []*types.Token{}
-	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.User)
+	tokens := []*types.TokenDB{}
+	user := request.Attribute(rest.ATTRIBUTE_AUTHED_USER).(*types.UserDB)
 
 	if err := types.GetTokensForUser(user, tokens); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(response, &tokens)
+	tokensToSend := make([]types.Token, len(tokens))
+	for index := range tokens {
+		tokensToSend[index] = *tokens[index].PrepareToSend()
+	}
+
+	httptypes.SendOK(response, &tokensToSend)
 }
 
 func (u *UserResource) getToken(request *restful.Request, response *restful.Response) {
 	tokenid := request.PathParameter("token-id")
-	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.UserDB)
 
-	token := types.Token{}
+	token := types.TokenDB{}
 	if err := types.GetToken(tokenid, &token); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	if token.User.Hex() != user.Id.Hex() {
+	if token.Token.User.Hex() != user.Id.Hex() {
 		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		return
 	}
 
-	httptypes.SendOK(response, token)
+	httptypes.SendOK(response, token.PrepareToSend())
 }
 
 func (u *UserResource) deleteToken(request *restful.Request, response *restful.Response) {
 	tokenid := request.PathParameter("token-id")
-	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.UserDB)
 
-	token := types.Token{}
+	token := types.TokenDB{}
 	if err := types.GetToken(tokenid, &token); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	if token.User.Hex() != user.Id.Hex() {
+	if token.Token.User.Hex() != user.Id.Hex() {
 		httptypes.SendError(response, &httptypes.INVALID_CREDENTIALS)
 		return
 	}
@@ -231,40 +235,47 @@ func (u *UserResource) deleteToken(request *restful.Request, response *restful.R
 		return
 	}
 
-	httptypes.SendOK(response, &token)
+	httptypes.SendOK(response, nil)
 }
 
 func (u *UserResource) getDevices(request *restful.Request, response *restful.Response) {
-	devices := []types.Device{}
+	devices := []types.DeviceDB{}
 
-	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.User)
+	user := request.Attribute(rest.ATTRIBUTE_URL_USER).(*types.UserDB)
 
 	if err := types.GetUsersDevices(user, &devices); err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	httptypes.SendOK(response, devices)
+	devicesToSend := make([]types.Device, len(devices))
+	for index := range devices {
+		devicesToSend[index] = *devices[index].PrepareToSend()
+	}
+
+	httptypes.SendOK(response, devicesToSend)
 }
 
 func (u *UserResource) registerUser(request *restful.Request, response *restful.Response) {
 	newUser := types.User{}
-	err := request.ReadEntity(&newUser)
-	if err != nil {
+
+	if err := request.ReadEntity(&newUser); err != nil {
 		httptypes.SendError(response, nil)
 		glog.Warning("Error parsing a new user: ", err)
 		return
 	}
 
-	if err := types.CreateUser(&newUser); err != nil {
+	createdUser, err := types.CreateUser(&newUser)
+
+	if err != nil {
 		httptypes.SendError(response, err.Status)
 		return
 	}
 
-	newUser.Activated = false
-	newUser.Save()
+	createdUser.User.Activated = false
+	createdUser.Save()
 
-	httptypes.SendOK(response, &newUser)
+	httptypes.SendOK(response, createdUser.PrepareToSend(false))
 
 	go activation.SendValidationEmail(&newUser)
 }
@@ -277,8 +288,7 @@ func (u *UserResource) activateUser(request *restful.Request, response *restful.
 
 	if val, ok := foo["activation_token"]; ok && val != "" {
 		if user, err := types.ActivateUserByToken(val); err == nil {
-			sanitization.UserSanitization(user, true)
-			httptypes.SendOK(response, &user)
+			httptypes.SendOK(response, user.PrepareToSend(true))
 			return
 		}
 	}

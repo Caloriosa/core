@@ -1,12 +1,12 @@
 package rest
 
 import (
+	"core/pkg/error"
 	"core/pkg/lib/tokenlib"
 	"core/types"
 	"core/types/httptypes"
 	"github.com/emicklei/go-restful"
 	"github.com/golang/glog"
-	"core/pkg/error"
 )
 
 const ATTRIBUTE_AUTHED_USER = "user"
@@ -43,7 +43,7 @@ func DeviceAuthFilter(req *restful.Request, resp *restful.Response, chain *restf
 
 func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
 	id := req.PathParameter("user-id")
-	user := new(types.User)
+	user := new(types.UserDB)
 
 	var err *errors.CalError
 
@@ -65,7 +65,7 @@ func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *rest
 
 func ExtractDeviceFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
 	id := req.PathParameter("device-id")
-	device := types.Device{}
+	device := types.DeviceDB{}
 	if err := types.GetDeviceById(id, &device); err != nil {
 		httptypes.SendError(resp, err.Status)
 		return

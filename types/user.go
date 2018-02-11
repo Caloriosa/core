@@ -7,6 +7,7 @@ import (
 	"core/pkg/tools"
 	"core/types/httptypes"
 	"errors"
+	"github.com/go-bongo/bongo"
 	"github.com/golang/glog"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -14,14 +15,25 @@ import (
 	"time"
 )
 
+type UserDB struct {
+	bongo.DocumentBase `bson:",inline"`
+	User               User `json:",inline" bson:",inline"`
+	AllowedToSave      bool `json:"-" bson:"-"`
+}
+
 const COLLECTION_USERS = "users"
 const SALT_LENGTH = 32
 
-func (u *User) Save() *calerror.CalError {
+func (u *UserDB) Save() *calerror.CalError {
+	if !u.AllowedToSave {
+		glog.Warning("Tried saving a copy! NOPE")
+		return nil
+	}
+
 	err := db.MONGO.Save(COLLECTION_USERS, u)
 	if mgo.IsDup(err) {
 		return &calerror.CalError{Status: &httptypes.DUPLICATED}
-	} else {
+	} else if err != nil {
 		glog.Info("Got error saving: ", err.Error())
 		return &calerror.CalError{Status: &httptypes.DATASOURCE_ERROR}
 	}
@@ -29,7 +41,7 @@ func (u *User) Save() *calerror.CalError {
 	return nil
 }
 
-func (u *User) Delete() *calerror.CalError {
+func (u *UserDB) Delete() *calerror.CalError {
 	if err := db.MONGO.Connection.Collection(COLLECTION_USERS).DeleteDocument(u); err != nil {
 		return &calerror.CalError{Status: &httptypes.REMOVE_FAILED}
 	}
@@ -68,15 +80,15 @@ func (u *User) MergeIn(with *User) {
 	}
 }
 
-func (u *User) Activate() *calerror.CalError {
-	u.Activated = true
-	u.ActivationKey = nil
-	u.ActivationExpiry = nil
+func (u *UserDB) Activate() *calerror.CalError {
+	u.User.Activated = true
+	u.User.ActivationKey = nil
+	u.User.ActivationExpiry = nil
 
 	return u.Save()
 }
 
-func GetUserById(id string, user *User) *calerror.CalError {
+func GetUserById(id string, user *UserDB) *calerror.CalError {
 	err := db.MONGO.FindById(COLLECTION_USERS, &user, id)
 	if err != nil {
 		return &calerror.CalError{Status: &httptypes.NOT_FOUND}
@@ -85,17 +97,30 @@ func GetUserById(id string, user *User) *calerror.CalError {
 	return nil
 }
 
-func GetUserByLogin(login string) (*calerror.CalError, *User) {
-	users := []User{}
-	if err := db.MONGO.Get(COLLECTION_USERS, &users, bson.M{"login": login}, 0, 1); err != nil || len(users) == 0{
+func (u *UserDB) PrepareToSend(strict bool) *User {
+	newUser := new(User)
+	*newUser = u.User
+	newUser.UID = u.Id.Hex()
+	newUser.CreatedAt = u.Created
+	newUser.ModifiedAt = u.Modified
+	newUser.Password = "" // sanitize
+	if strict {
+		newUser.Email = ""
+	}
+	return newUser
+}
+
+func GetUserByLogin(login string) (*calerror.CalError, *UserDB) {
+	users := []UserDB{}
+	if err := db.MONGO.Get(COLLECTION_USERS, &users, bson.M{"login": login}, 0, 1); err != nil || len(users) == 0 {
 		return &calerror.CalError{Status: &httptypes.NOT_FOUND}, nil
 	}
 	return nil, &users[0]
 }
 
-func ActivateUserByToken(token string) (*User, *calerror.CalError) {
-	users := []User{}
-	user := User{}
+func ActivateUserByToken(token string) (*UserDB, *calerror.CalError) {
+	users := []UserDB{}
+	user := UserDB{}
 	if err := db.MONGO.Get(COLLECTION_USERS, &users, bson.M{"activationkey": token}, 0, 1); err != nil {
 		return nil, &calerror.CalError{Status: &httptypes.INVALID_TOKEN}
 	}
@@ -106,41 +131,43 @@ func ActivateUserByToken(token string) (*User, *calerror.CalError) {
 
 	user = users[0]
 
-	if user.ActivationExpiry == nil || user.Activated {
+	if user.User.ActivationExpiry == nil || user.User.Activated {
 		glog.Info("Tried reactivating already activated user")
 		return &user, nil
 	}
 
-	if user.ActivationExpiry.Before(time.Now()) {
-		glog.Info("Tried activating expired user: ", user.ActivationExpiry)
+	if user.User.ActivationExpiry.Before(time.Now()) {
+		glog.Info("Tried activating expired user: ", user.User.ActivationExpiry)
 		return nil, &calerror.CalError{Status: &httptypes.TOKEN_EXPIRED}
 	}
 
-	return &user, user.Activate()
+	err := user.Activate()
+
+	return &user, err
 }
 
-func GetUserFromRequest(r *http.Request) (*User, *calerror.CalError) {
+func GetUserFromRequest(r *http.Request) (*UserDB, *calerror.CalError) {
 	token := GetTokenFromRequest(r)
 	if token == nil {
 		return nil, &calerror.CalError{Status: &httptypes.UNAUTHORIZED}
 	}
-	if token.User == nil || token.Type != TokenUser {
+	if token.Token.User == nil || token.Token.Type != TokenUser {
 		return nil, &calerror.CalError{Status: &httptypes.INVALID_TOKEN}
 	}
 
-	user := User{}
-	if err := GetUserById(token.User.Hex(), &user); err != nil {
+	user := UserDB{}
+	if err := GetUserById(token.Token.User.Hex(), &user); err != nil {
 		return nil, &calerror.CalError{Status: &httptypes.INVALID_TOKEN}
 	}
 
 	return &user, nil
 }
 
-func CreateUser(newUser *User) *calerror.CalError {
+func CreateUser(newUser *User) (*UserDB, *calerror.CalError) {
 
 	if err := newUser.Validate(); err != nil {
 		glog.Info("Error validating a new user: ", err, " user: ", newUser)
-		return &calerror.CalError{Status: &httptypes.DATA_INCOMPLETE}
+		return nil, &calerror.CalError{Status: &httptypes.DATA_PARSE_ERROR}
 	}
 
 	newUser.Role = RoleUser
@@ -154,13 +181,17 @@ func CreateUser(newUser *User) *calerror.CalError {
 	newUser.Password = tools.EncodeUserPassword(tmppwd, salt)
 	newUser.Salt = salt
 
-	return newUser.Save()
+	db := UserDB{}
+	db.User = *newUser
+	db.AllowedToSave = true
+
+	return &db, db.Save()
 }
 func GetUserFromTokenString(token string) (bson.ObjectId, *calerror.CalError) {
 	xtokens := []Token{}
 	err := db.MONGO.Get(COLLECTION_TOKENS, &xtokens, bson.M{"token": token}, 0, 1)
 	if err != nil {
-		return "", &calerror.CalError{Status: &httptypes.UNKNOWN}
+		return "", &calerror.CalError{Status: &httptypes.SERVER_ERROR}
 	}
 	if len(xtokens) == 0 {
 		return "", &calerror.CalError{Status: &httptypes.INVALID_TOKEN}
