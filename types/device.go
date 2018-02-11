@@ -6,6 +6,7 @@ import (
 	"core/pkg/lib/devices"
 	"core/types/httptypes"
 	"github.com/go-bongo/bongo"
+	"github.com/golang/glog"
 	"gopkg.in/mgo.v2/bson"
 	"net/http"
 )
@@ -15,6 +16,19 @@ const COLLECTION_DEVICES = "devices"
 type DeviceDB struct {
 	bongo.DocumentBase `bson:",inline"`
 	Device             Device `json:",inline" bson:",inline"`
+}
+
+type Map struct {
+	Position struct {
+		Latitude  float32 `json:"lat" bson:"latitude"`
+		Longitude float32 `json:"lng" bson:"longitude"`
+	} `json:"position" bson:"_id"`
+
+	Devices []struct {
+		UID   bson.ObjectId `json:"uid" bson:"uid"`
+		Title string        `json:"title" bson:"title"`
+		Name  string        `json:"name" bson:"name"`
+	} `json:"devices"`
 }
 
 func (d *DeviceDB) Save() *errors.CalError {
@@ -84,4 +98,27 @@ func GetUsersDevices(user *UserDB, devices *[]DeviceDB) *errors.CalError {
 	}
 
 	return nil
+}
+
+func GetMap() *[]Map {
+	mapreq := []bson.M{
+		{
+			"$group": bson.M{
+				"_id": "$position",
+				"devices": bson.M{
+					"$push": bson.M{
+						"uid":   "$_id",
+						"title": "$title",
+						"name":  "$name",
+					},
+				},
+			},
+		},
+	}
+
+	results := db.MONGO.Connection.Collection(COLLECTION_DEVICES).Collection().Pipe(mapreq)
+	mapped := []Map{}
+	results.All(&mapped)
+	glog.Info("Got this map: ", mapped)
+	return &mapped
 }

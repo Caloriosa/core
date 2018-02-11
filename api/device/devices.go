@@ -24,12 +24,22 @@ func (u *DeviceResource) Register(container *restful.Container) {
 	ws := new(restful.WebService)
 	ws.Path("/devices")
 	ws.Route(ws.GET("").To(u.listDevices))
-	ws.Route(ws.GET("{device-id}").Filter(rest.ExtractDeviceFilter).To(u.getDevice))
 	ws.Route(ws.POST("").Filter(rest.UserAuthFilter).To(u.createDevice))
-	ws.Route(ws.PATCH("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.patchDevice))
-	ws.Route(ws.DELETE("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteDevice))
+
+	ws.Route(ws.GET("map").To(u.loadMap))
 
 	ws.Route(ws.GET("my").Filter(rest.UserAuthFilter).To(u.listMyDevices))
+	ws.Route(ws.GET("me").To(u.getSelf))
+
+	ws.Route(ws.GET("me/sensors").To(u.listSelfSensors))
+	ws.Route(ws.POST("me/sensors").To(u.createSelfSensor))
+	ws.Route(ws.GET("me/sensors/{sensor-id}").To(u.getSelfSensor))
+	ws.Route(ws.GET("me/sensors/{sensor-id}").To(u.patchSelfSensor))
+	ws.Route(ws.DELETE("me/sensors/{sensor-id}").To(u.deleteSelfSensor))
+
+	ws.Route(ws.GET("{device-id}").Filter(rest.ExtractDeviceFilter).To(u.getDevice))
+	ws.Route(ws.PATCH("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.patchDevice))
+	ws.Route(ws.DELETE("{device-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteDevice))
 
 	ws.Route(ws.GET("{device-id}/sensors").Filter(rest.ExtractDeviceFilter).To(u.listSensors))
 	ws.Route(ws.POST("{device-id}/sensors").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.createSensor))
@@ -46,14 +56,6 @@ func (u *DeviceResource) Register(container *restful.Container) {
 	ws.Route(ws.GET("{device-id}/token").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.listTokens))
 	ws.Route(ws.POST("{device-id}/token").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.createToken))
 	ws.Route(ws.DELETE("{device-id}/token/{token-id}").Filter(rest.ExtractDeviceFilter).Filter(rest.UserAuthFilter).To(u.deleteToken))
-
-	ws.Route(ws.GET("me").To(u.getSelf))
-
-	ws.Route(ws.GET("me/sensors").To(u.listSelfSensors))
-	ws.Route(ws.POST("me/sensors").To(u.createSelfSensor))
-	ws.Route(ws.GET("me/sensors/{sensor-id}").To(u.getSelfSensor))
-	ws.Route(ws.GET("me/sensors/{sensor-id}").To(u.patchSelfSensor))
-	ws.Route(ws.DELETE("me/sensors/{sensor-id}").To(u.deleteSelfSensor))
 
 	container.Add(ws)
 }
@@ -98,7 +100,11 @@ func (d *DeviceResource) createDevice(request *restful.Request, response *restfu
 
 	device := types.Device{}
 	decoder := json.NewDecoder(request.Request.Body)
-	decoder.Decode(&device)
+	if err := decoder.Decode(&device); err != nil {
+		httptypes.SendError(response, &httptypes.INVALID_DATA)
+		glog.Info("Got invalid Device JSON: ", err.Error())
+		return
+	}
 
 	if err := device.ValidateNew(); err != nil {
 		httptypes.SendError(response, err.Status)
@@ -198,4 +204,9 @@ func (d *DeviceResource) createSelfSensor(request *restful.Request, response *re
 
 func (d *DeviceResource) patchSelfSensor(request *restful.Request, response *restful.Response) {
 
+}
+
+func (d *DeviceResource) loadMap(request *restful.Request, response *restful.Response) {
+	mapped := types.GetMap()
+	httptypes.SendOK(response, mapped)
 }
