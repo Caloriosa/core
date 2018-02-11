@@ -49,10 +49,16 @@ func (d *Device) ValidateNew() *errors.CalError {
 
 func (d *DeviceDB) PrepareToSend() *Device {
 	device := new(Device)
+	user := UserDB{}
+	if err := GetUserById(d.Device.User.Hex(), &user); err != nil {
+		return nil // uh
+	}
 	*device = d.Device
 	device.UID = d.Id.Hex()
 	device.CreatedAt = d.Created
 	device.ModifiedAt = d.Modified
+	device.UserObj = user.PrepareToSend(true)
+	device.User = nil
 	return device
 }
 
@@ -87,6 +93,17 @@ func GetDeviceById(id string, device *DeviceDB) *errors.CalError {
 	if err != nil {
 		return &errors.CalError{Status: &httptypes.NOT_FOUND}
 	}
+
+	return nil
+}
+
+func GetDeviceByName(id string, device *DeviceDB) *errors.CalError {
+	devices := []DeviceDB{}
+	if err := db.MONGO.Get(COLLECTION_DEVICES, &devices, bson.M{"name": id}, 0, 1); err != nil || len(devices) == 0 {
+		return &errors.CalError{Status: &httptypes.NOT_FOUND}
+	}
+
+	*device = devices[0]
 
 	return nil
 }

@@ -18,7 +18,8 @@ type Device struct {
 	} `json:"position"`
 	FeaturedSensor *bson.ObjectId `json:"featuredsensor"`
 	Tags           []string       `json:"tags"`
-	User           *bson.ObjectId `json:"user"`
+	User           *bson.ObjectId `json:",omitempty"`
+	UserObj        *User          `json:"user" bson:"-"`
 }
 
 type Sensor struct {

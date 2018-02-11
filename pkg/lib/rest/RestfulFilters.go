@@ -66,12 +66,20 @@ func ExtractUserFilter(req *restful.Request, resp *restful.Response, chain *rest
 func ExtractDeviceFilter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
 	id := req.PathParameter("device-id")
 	device := types.DeviceDB{}
-	if err := types.GetDeviceById(id, &device); err != nil {
+
+	var err *errors.CalError
+
+	if id[0:1] == "@" {
+		err = types.GetDeviceByName(id[1:], &device)
+	} else {
+		err = types.GetDeviceById(id, &device)
+	}
+	if err != nil {
 		httptypes.SendError(resp, err.Status)
 		return
 	}
 
-	req.SetAttribute(ATTRIBUTE_URL_DEVICE, device)
+	req.SetAttribute(ATTRIBUTE_URL_DEVICE, &device)
 	chain.ProcessFilter(req, resp)
 }
 
