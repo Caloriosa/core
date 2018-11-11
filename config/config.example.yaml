@@ -1,0 +1,18 @@
+MongoConnection: 127.0.0.1:27017
+MongoDatabase: caloriosa
+Users:
+  CanRegister: true
+  Activation: true # whether to enable the need to activate
+  ActivationExpiry: 24 # expiry in hours
+Email:
+  SmtpHost: 127.0.0.1
+  SmtpPort: 925
+  SmtpUser: caloriosa
+  SmtpPassword: caloriosa
+  EmailFrom: caloriosa@mail.caloriosa.lan
+AppTokens:
+- App: WebUI
+  Token: asdf123
+
+Dev:
+  TestEmailTo: caloriosa@caloriosa.lan
